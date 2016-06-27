@@ -12,7 +12,14 @@ SRC_URI += "file://lpss.cfg \
 			file://nat.cfg \
 			file://spi.cfg \
 			file://usbotg.cfg \
+			file://camera.cfg \
 			"
+
+# List of binarie files
+SRC_URI += "file://shisp_2401a0_v21.bin \
+			"
+
+
 # List of patches to apply
 SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0002-dma-dw-Allow-driver-usage-on-platforms.patch \
@@ -26,4 +33,10 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0010--spi-pxa2xx-Add-support-for-both-chip-selects-on-Inte.patch \
 			file://0011-usb-otg-add-cherryview-support.patch \
 			file://0012-pmic-intel-port-whiskey-cove-driver.patch \
+			file://0013-temp-atomisp-support.patch \
 			"
+
+do_install_append() {
+			install -d ${D}/lib/firmware
+			install -m 0777 ${WORKDIR}/shisp_2401a0_v21.bin ${D}/lib/firmware
+}
