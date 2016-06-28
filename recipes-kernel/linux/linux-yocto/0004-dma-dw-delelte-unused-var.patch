@@ -1,0 +1,29 @@
+From 01fc63fa225f85e2e53c89d08cf4e488bd16148d Mon Sep 17 00:00:00 2001
+From: Huiquan Zhong <huiquan.zhong@intel.com>
+Date: Fri, 16 Jan 2015 16:02:38 +0800
+Subject: [PATCH 05/10] dma: dw: delelte unused variable 'i'
+
+Delete unused variable 'i' in dw_dma_off().
+
+Change-Id: I7bad310719c1e49416d4d07ea3f8b8ffca7fe903
+Signed-off-by: Huiquan Zhong <huiquan.zhong@intel.com>
+---
+ drivers/dma/dw/core.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+index eccf8a1..7b5449d 100644
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -1101,8 +1101,6 @@ static void dwc_issue_pending(struct dma_chan *chan)
+
+ static void dw_dma_off(struct dw_dma *dw)
+ {
+-	int i;
+-
+ 	dma_writel(dw, CFG, 0);
+
+ 	channel_clear_bit(dw, MASK.XFER, dw->all_chan_mask);
+-- 
+1.9.1
+
