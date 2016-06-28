@@ -12,6 +12,7 @@ SRC_URI += "file://lpss.cfg \
 			file://nat.cfg \
 			file://spi.cfg \
 			file://usbotg.cfg \
+			file://regulator.cfg \
 			file://camera.cfg \
 			"
 
@@ -34,6 +35,7 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0011-usb-otg-add-cherryview-support.patch \
 			file://0012-pmic-intel-port-whiskey-cove-driver.patch \
 			file://0013-temp-atomisp-support.patch \
+			file://0014-OV8858-add-sensor-sources-to-cloudsrest-platform.patch \
 			"
 
 do_install_append() {
