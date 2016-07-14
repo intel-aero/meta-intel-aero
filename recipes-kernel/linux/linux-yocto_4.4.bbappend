@@ -19,4 +19,8 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0004-dma-dw-delelte-unused-var.patch \
 			file://0005-dma-dw-enable-CherryTrail.patch \
 			file://0006-dma-dw-remove-shutdown-ho.patch \
+			file://0007-spi-Let-drivers-translate-ACPI-DeviceSelection-to-su.patch \
+			file://0008--spi-pxa2xx-Move-chip-select-control-bits-into-lpss_c.patch \
+			file://0009--spi-pxa2xx-Translate-ACPI-DeviceSelection-to-Linux-c.patch \
+			file://0010--spi-pxa2xx-Add-support-for-both-chip-selects-on-Inte.patch \
 			"
