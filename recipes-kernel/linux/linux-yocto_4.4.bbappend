@@ -11,6 +11,7 @@ SRC_URI += "file://fbefi.cfg \
 			file://drone-code.cfg \
 			file://acmmbim.cfg \
 			file://nat.cfg \
+			file://spi.cfg \
 			"
 # List of patches to apply
 SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
