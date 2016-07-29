@@ -9,7 +9,6 @@ RDEPENDS_${PN} = "\
 		i2c-tools \
 		devmem2 \
 		screen \
-		gst-player-bin \
 		lsof \
 		strace \
 		"
