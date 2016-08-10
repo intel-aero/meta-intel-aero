@@ -9,5 +9,5 @@ inherit core-image
 IMAGE_INSTALL += ""
 
 # Tests applications
-IMAGE_INSTALL += ""
+IMAGE_INSTALL += "packagegroup-core-tools"
 
