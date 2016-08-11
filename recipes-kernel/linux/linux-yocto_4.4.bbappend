@@ -11,6 +11,7 @@ SRC_URI += "file://lpss.cfg \
 			file://acmmbim.cfg \
 			file://nat.cfg \
 			file://spi.cfg \
+			file://usbotg.cfg \
 			"
 # List of patches to apply
 SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
@@ -23,4 +24,6 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0008--spi-pxa2xx-Move-chip-select-control-bits-into-lpss_c.patch \
 			file://0009--spi-pxa2xx-Translate-ACPI-DeviceSelection-to-Linux-c.patch \
 			file://0010--spi-pxa2xx-Add-support-for-both-chip-selects-on-Inte.patch \
+			file://0011-usb-otg-add-cherryview-support.patch \
+			file://0012-pmic-intel-port-whiskey-cove-driver.patch \
 			"

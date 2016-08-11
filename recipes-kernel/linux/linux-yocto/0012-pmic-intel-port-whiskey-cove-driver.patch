@@ -1,0 +1,4581 @@
+From d5e723deab9cce9153788818a410e71b07730f8e Mon Sep 17 00:00:00 2001
+From: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
+Date: Thu, 7 Jul 2016 15:36:17 -0700
+Subject: [PATCH] pmic: intel: port whiskey cove driver
+
+Adds Whiskey Cove PMIC driver and features related to USB OTG
+detection, charger and temp have been removed along with portions
+of the original code to implement basic features only.
+
+This code is not intended to be submitted to LKML, cleanup and
+adaptation is needed for latest kernels. In future, this patch
+should be reverted in favor of a driver that has been reviewed
+and accepted in LKML.
+
+As such, this contains multiple logical blocks to keep changes
+contained in a single patch. Since it is a big squash patch,
+I think it is worth mentioning the people that have contributed
+to this code:
+
+    Aaron Lu <aaron.lu@intel.com>
+    Albin B <albin.bala.krishnan@intel.com>
+    Ananth Krishna R <ananth.krishna.r@intel.com>
+    Bidipta Samadder <bidiptax.samadder@intel.com>
+    Biju Chakkachattil <bijux.chakkachattil@intel.com>
+    Catalin Popescu <catalin.popescu@intel.com>
+    Ding Yunliang <yunliang.ding@intel.com>
+    Fei Yang <fei.yang@intel.com>
+    Jenny TC <jenny.tc@intel.com>
+    John Fredriksson <john.fredriksson@intel.com>
+    ola.lilja <ola.lilja@intel.com>
+    Pat Noziska <patrick.j.noziska@intel.com>
+    qipeng.zha <qipeng.zha@intel.com>
+    Rakesh Ranjan Jha <rakesh.r.jha@intel.com>
+    raosrini <srinidhi.rao@intel.com>
+    Rapaka Naveen <naveen.rapaka@intel.com>
+    Richard A. Griffiths <richard.a.griffiths@intel.com>
+    R, Kannappan <r.kannappan@intel.com>
+    srihars1 <sriharsha.govinda.raj@intel.com>
+    Venkataramana Kotakonda <venkataramana.kotakonda@intel.com>
+    Vineesh k k <vineesh.k.k@intel.com>
+    ysiyer <yegnesh.s.iyer@intel.com>
+    Yuan Juntao <juntao.yuan@intel.com>
+    Zhang Yanmin <yanmin.zhang@intel.com>
+
+Signed-off-by: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
+---
+ arch/x86/include/asm/intel_wcove_bcu.h            |  113 +++
+ drivers/i2c/busses/Makefile                       |    1 +
+ drivers/i2c/busses/i2c-wcove-pmic.c               |  317 +++++++
+ drivers/mfd/Makefile                              |    2 +-
+ drivers/mfd/intel_soc_pmic_core.c                 |  528 ++++++++---
+ drivers/mfd/intel_soc_pmic_core.h                 |   73 +-
+ drivers/mfd/intel_soc_pmic_i2c.c                  |  197 ++++
+ drivers/mfd/intel_soc_pmic_wc.c                   |  938 +++++++++++++++++++
+ drivers/power/Makefile                            |    1 +
+ drivers/power/intel_pmic_ccsm.c                   | 1010 +++++++++++++++++++++
+ drivers/power/intel_pmic_ccsm.h                   |  408 +++++++++
+ include/linux/iio/intel_wcove_gpadc.h             |  100 ++
+ include/linux/lnw_gpio.h                          |   13 +
+ include/linux/mfd/intel_soc_pmic.h                |   93 +-
+ include/linux/mfd/intel_soc_pmic_wcove.h          |   88 ++
+ include/linux/power/intel_pmic_ccsm.h             |  119 +++
+ include/linux/power_supply.h                      |  135 ++-
+ include/linux/regulator/intel_whiskey_cove_pmic.h |   68 ++
+ 18 files changed, 4063 insertions(+), 141 deletions(-)
+ create mode 100644 arch/x86/include/asm/intel_wcove_bcu.h
+ create mode 100644 drivers/i2c/busses/i2c-wcove-pmic.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_i2c.c
+ create mode 100644 drivers/mfd/intel_soc_pmic_wc.c
+ create mode 100644 drivers/power/intel_pmic_ccsm.c
+ create mode 100644 drivers/power/intel_pmic_ccsm.h
+ create mode 100644 include/linux/iio/intel_wcove_gpadc.h
+ create mode 100644 include/linux/lnw_gpio.h
+ create mode 100644 include/linux/mfd/intel_soc_pmic_wcove.h
+ create mode 100644 include/linux/power/intel_pmic_ccsm.h
+ create mode 100644 include/linux/regulator/intel_whiskey_cove_pmic.h
+
+diff --git a/arch/x86/include/asm/intel_wcove_bcu.h b/arch/x86/include/asm/intel_wcove_bcu.h
+new file mode 100644
+index 0000000..dced47e
+--- /dev/null
++++ b/arch/x86/include/asm/intel_wcove_bcu.h
+@@ -0,0 +1,113 @@
++#ifndef __INTEL_WCOVE_BCU_H__
++#define __INTEL_WCOVE_BCU_H__
++
++#define DRIVER_NAME "wcove_bcu"
++#define DEVICE_NAME "wcove_pmic_bcu"
++
++/* Generic bit representation macros */
++#define B0	(1 << 0)
++#define B1	(1 << 1)
++#define B2	(1 << 2)
++#define B3	(1 << 3)
++#define B4	(1 << 4)
++#define B5	(1 << 5)
++#define B6	(1 << 6)
++#define B7	(1 << 7)
++
++/* IRQ registers */
++#define BCUIRQ_REG              0x6E07
++#define IRQLVL1_REG             0x6E02
++#define MIRQLVL1_REG            0x6E0E
++
++/*IRQ Mask Register*/
++#define MBCUIRQ_REG             0x6E14
++
++/* Status registers */
++#define SBCUIRQ_REG             0x6EBB
++#define SBCUCTRL_REG            0x6EBC
++
++/* Voltage Trip Point Configuration Register */
++#define VWARNA_CFG_REG          0x6EB4
++#define VWARNB_CFG_REG          0x6EB5
++#define VCRIT_CFG_REG           0x6EB6
++
++/* Current Trip Point Configuration Register */
++#define ICCMAXVCC_CFG_REG       0x6EFB
++#define ICCMAXVNN_CFG_REG       0x6EFC
++#define ICCMAXVGG_CFG_REG       0x6EFD
++
++/* Output Pin Behavior Register */
++#define BCUDISB_BEH_REG         0x6EB8
++#define BCUDISCRIT_BEH_REG      0x6EB9
++#define BCUVSYS_DRP_BEH_REG     0x6EBA
++
++#define MAX_VOLTAGE_TRIP_POINTS 3
++#define MAX_CURRENT_TRIP_POINTS 3
++
++#define MBCU                    B2
++
++#define VWARNA_EN               B3
++#define ICCMAXVCC_EN            B7
++
++#define MVCRIT			B2
++#define MVWARNA			B1
++#define MVWARNB			B0
++
++#define VWARNB                  B0
++#define VWARNA                  B1
++#define VCRIT                   B2
++#define GSMPULSE                B3
++#define TXPWRTH                 B4
++
++#define SVWARNB                 B0
++#define SVWARNA                 B1
++#define SCRIT                   B2
++
++#define SBCUDISB                B2
++#define SBCUDISCRIT             B1
++
++/* Max length of the register name string */
++#define MAX_REGNAME_LEN		20
++
++/* Max number register from platform config */
++#define MAX_BCUCFG_REGS         10
++
++/* delay interval for unmasking vwarnb interrupt */
++#define VWARNB_INTR_EN_DELAY    (30 * HZ)
++
++/* check whether bit is sticky or not by checking bit 2 */
++#define IS_BCUDISB_STICKY(data)		(!!(data & B2))
++
++/* Check  BCUDISB Output Pin enable on assertion of VWARNB crossing */
++#define IS_ASSRT_ON_BCUDISB(data)	(!!(data & B0))
++
++/* Macro to get the mode of access for the BCU registers	*/
++#define MODE(r)	(((r != BCUIRQ_REG) && (r != IRQLVL1_REG) && \
++			(r != SBCUIRQ_REG))	\
++			? (S_IRUGO | S_IWUSR) : S_IRUGO)
++
++/* Generic macro to assign the parameters (reg name and address) */
++#define reg_info(x)	{ .name = #x, .addr = x, .mode = MODE(x) }
++
++/**
++ * These values are read from platform.
++ * platform get these entries - default register configurations
++ * BCU is programmed to these default values during boot time.
++ */
++struct wcpmic_bcu_config_data {
++	u16 addr;
++	u8 data;
++};
++
++struct wcove_bcu_platform_data {
++	struct wcpmic_bcu_config_data config[MAX_BCUCFG_REGS];
++	int num_regs;
++};
++
++struct bcu_reg_info {
++	char	name[MAX_REGNAME_LEN];	/* register name   */
++	u16	addr;			/* offset address  */
++	u16	mode;			/* permission mode */
++};
++
++#endif /* __INTEL_WCOVE_BCU_H__ */
+diff --git a/drivers/i2c/busses/Makefile b/drivers/i2c/busses/Makefile
+index 37f2819..a972dff 100644
+--- a/drivers/i2c/busses/Makefile
++++ b/drivers/i2c/busses/Makefile
+@@ -118,5 +118,6 @@ obj-$(CONFIG_I2C_PCA_ISA)	+= i2c-pca-isa.o
+ obj-$(CONFIG_I2C_SIBYTE)	+= i2c-sibyte.o
+ obj-$(CONFIG_I2C_XGENE_SLIMPRO) += i2c-xgene-slimpro.o
+ obj-$(CONFIG_SCx200_ACB)	+= scx200_acb.o
++obj-$(CONFIG_INTEL_SOC_PMIC)	+= i2c-wcove-pmic.o
+ 
+ ccflags-$(CONFIG_I2C_DEBUG_BUS) := -DDEBUG
+diff --git a/drivers/i2c/busses/i2c-wcove-pmic.c b/drivers/i2c/busses/i2c-wcove-pmic.c
+new file mode 100644
+index 0000000..ff9a8bb
+--- /dev/null
++++ b/drivers/i2c/busses/i2c-wcove-pmic.c
+@@ -0,0 +1,317 @@
++/*
++ * i2c-wcove-pmic.c: Whiskey Cove PMIC I2C adapter driver.
++ *
++ * Copyright (C) 2011 Intel Corporation
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * Author: Yegnesh Iyer <yegnesh.s.iyer@intel.com>
++ */
++
++#include <linux/slab.h>
++#include <linux/platform_device.h>
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/i2c.h>
++#include <linux/mutex.h>
++#include <linux/interrupt.h>
++#include <linux/completion.h>
++#include <linux/mfd/intel_soc_pmic.h>
++
++#define DRIVER_NAME "wcove_pmic_i2c"
++
++#define D7 (1 << 7)
++#define D6 (1 << 6)
++#define D5 (1 << 5)
++#define D4 (1 << 4)
++#define D3 (1 << 3)
++#define D2 (1 << 2)
++#define D1 (1 << 1)
++#define D0 (1 << 0)
++
++
++#define I2C_MSG_LEN		4
++
++#define I2COVRCTRL_ADDR		0x5E24
++#define I2COVRDADDR_ADDR	0x5E25
++#define I2COVROFFSET_ADDR	0x5E26
++#define I2COVRWRDATA_ADDR	0x5E27
++#define I2COVRRDDATA_ADDR	0x5E28
++
++#define MCHGRIRQ0_ADDR		0x6E17
++
++#define PMIC_I2C_INTR_MASK	(D3|D2|D1)
++#define I2COVRCTRL_I2C_RD	D1
++#define I2COVRCTRL_I2C_WR	D0
++#define CHGRIRQ0_ADDR		0x6E0A
++
++#define IRQ0_I2C_BIT_POS	 1
++
++struct pmic_i2c_dev {
++	int irq;
++	u32 pmic_intr_sram_addr;
++	struct i2c_adapter adapter;
++	int i2c_rw;
++	wait_queue_head_t i2c_wait;
++	struct mutex i2c_pmic_rw_lock;
++	struct device *dev;
++};
++
++enum I2C_STATUS {
++	I2C_WR = 1,
++	I2C_RD,
++	I2C_NACK = 4
++};
++
++static struct pmic_i2c_dev *pmic_dev;
++struct i2c_adapter *wcove_pmic_i2c_adapter;
++EXPORT_SYMBOL(wcove_pmic_i2c_adapter);
++
++static irqreturn_t pmic_thread_handler(int id, void *data)
++{
++	u8 irq0_int;
++
++	irq0_int = intel_soc_pmic_readb(CHGRIRQ0_ADDR);
++	pmic_dev->i2c_rw = (irq0_int >> IRQ0_I2C_BIT_POS);
++	wake_up(&(pmic_dev->i2c_wait));
++	return IRQ_HANDLED;
++}
++
++/* PMIC i2c read msg */
++static inline int pmic_i2c_read_xfer(struct i2c_msg msg)
++{
++	int ret;
++	u16 i;
++	u8 mask = (I2C_RD | I2C_NACK);
++
++	for (i = 0; i < msg.len ; i++) {
++		pmic_dev->i2c_rw = 0;
++		ret = intel_soc_pmic_writeb(I2COVRDADDR_ADDR, msg.addr);
++		if (ret)
++			return ret;
++		ret = intel_soc_pmic_writeb
++				(I2COVROFFSET_ADDR, msg.buf[0] + i);
++		if (ret)
++			return  ret;
++
++		ret =  intel_soc_pmic_writeb
++				(I2COVRCTRL_ADDR, I2COVRCTRL_I2C_RD);
++		if (ret)
++			return ret;
++
++		ret = wait_event_timeout(pmic_dev->i2c_wait,
++				(pmic_dev->i2c_rw & mask),
++				HZ);
++
++		if (ret == 0)
++			return -ETIMEDOUT;
++		else if (pmic_dev->i2c_rw == I2C_NACK)
++			return  -EIO;
++
++		msg.buf[i] = intel_soc_pmic_readb(I2COVRRDDATA_ADDR);
++		if (msg.buf[i] < 0)
++			return -EIO;
++	}
++	return 0;
++}
++
++/* PMIC i2c write msg */
++static inline int pmic_i2c_write_xfer(struct i2c_msg msg)
++{
++	int ret;
++	u16 i;
++	u8 mask = (I2C_WR | I2C_NACK);
++
++	for (i = 1; i <= msg.len ; i++) {
++		pmic_dev->i2c_rw = 0;
++		ret = intel_soc_pmic_writeb(I2COVRDADDR_ADDR, msg.addr);
++		if (ret)
++			return ret;
++
++		ret = intel_soc_pmic_writeb
++				(I2COVRWRDATA_ADDR, msg.buf[i]);
++		if (ret)
++			return ret;
++
++		ret = intel_soc_pmic_writeb
++			(I2COVROFFSET_ADDR, msg.buf[0] + i - 1);
++		if (ret)
++			return ret;
++
++		ret = intel_soc_pmic_writeb
++			(I2COVRCTRL_ADDR, I2COVRCTRL_I2C_WR);
++		if (ret)
++			return ret;
++
++		ret = wait_event_timeout(pmic_dev->i2c_wait,
++				(pmic_dev->i2c_rw & mask),
++				HZ);
++		if (ret == 0)
++			return -ETIMEDOUT;
++		else if (pmic_dev->i2c_rw == I2C_NACK)
++			return -EIO;
++	}
++	return 0;
++}
++
++static int (*xfer_fn[]) (struct i2c_msg) = {
++	pmic_i2c_write_xfer,
++	pmic_i2c_read_xfer
++};
++
++/* PMIC I2C Master transfer algorithm function */
++static int pmic_master_xfer(struct i2c_adapter *adap,
++				struct i2c_msg msgs[],
++				int num)
++{
++	int ret = 0;
++	int i;
++	u8 index;
++
++	mutex_lock(&pmic_dev->i2c_pmic_rw_lock);
++	for (i = 0 ; i < num ; i++) {
++		index = msgs[i].flags & I2C_M_RD;
++		ret = (xfer_fn[index])(msgs[i]);
++
++		if (ret == -EACCES)
++			dev_info(pmic_dev->dev, "Blocked Access!\n");
++
++		/* If access is restricted, return true to
++		*  avoid extra error handling in client
++		*/
++
++		if (ret != 0 && ret != -EACCES)
++			goto transfer_err_exit;
++	}
++
++	ret = num;
++
++transfer_err_exit:
++	mutex_unlock(&pmic_dev->i2c_pmic_rw_lock);
++	return ret;
++}
++
++/* PMIC I2C adapter capability function */
++static u32 pmic_master_func(struct i2c_adapter *adap)
++{
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_BYTE_DATA;
++}
++
++static int pmic_smbus_xfer(struct i2c_adapter *adap, u16 addr,
++				unsigned short flags, char read_write,
++				u8 command, int size,
++				union i2c_smbus_data *data)
++{
++	struct i2c_msg msg;
++	u8 buf[2];
++	int ret;
++
++	msg.addr = addr;
++	msg.flags = flags & I2C_M_TEN;
++	msg.buf = buf;
++	msg.buf[0] = command;
++	if (read_write == I2C_SMBUS_WRITE) {
++		msg.len = 1;
++		msg.buf[1] = data->byte;
++	} else {
++		msg.flags |= I2C_M_RD;
++		msg.len = 1;
++	}
++
++	ret = pmic_master_xfer(adap, &msg, 1);
++	if (ret == 1) {
++		if (read_write == I2C_SMBUS_READ)
++			data->byte = msg.buf[0];
++		return 0;
++	}
++	return ret;
++}
++
++
++static const struct i2c_algorithm pmic_i2c_algo = {
++	.master_xfer = pmic_master_xfer,
++	.functionality = pmic_master_func,
++	.smbus_xfer = pmic_smbus_xfer,
++};
++
++static int pmic_i2c_probe(struct platform_device *pdev)
++{
++	int ret;
++
++	pmic_dev = kzalloc(sizeof(struct pmic_i2c_dev), GFP_KERNEL);
++	if (!pmic_dev)
++		return -ENOMEM;
++
++	pmic_dev->dev = &pdev->dev;
++	pmic_dev->irq = platform_get_irq(pdev, 0);
++
++	mutex_init(&pmic_dev->i2c_pmic_rw_lock);
++	init_waitqueue_head(&(pmic_dev->i2c_wait));
++
++	ret = request_threaded_irq(pmic_dev->irq, NULL,
++					pmic_thread_handler, IRQF_ONESHOT,
++					DRIVER_NAME, pmic_dev);
++	if (ret)
++		goto err_irq_request;
++
++	ret = intel_soc_pmic_update(MCHGRIRQ0_ADDR, 0x00,
++			PMIC_I2C_INTR_MASK);
++	if (unlikely(ret))
++		goto unmask_irq_failed;
++
++	wcove_pmic_i2c_adapter = &pmic_dev->adapter;
++	wcove_pmic_i2c_adapter->owner = THIS_MODULE;
++	wcove_pmic_i2c_adapter->class = I2C_CLASS_HWMON;
++	wcove_pmic_i2c_adapter->algo = &pmic_i2c_algo;
++	strcpy(wcove_pmic_i2c_adapter->name, "PMIC I2C Adapter");
++	wcove_pmic_i2c_adapter->nr = pdev->id;
++	ret = i2c_add_numbered_adapter(wcove_pmic_i2c_adapter);
++
++	if (ret) {
++		dev_err(&pdev->dev, "Error adding the adapter\n");
++		goto err_adap_add;
++	}
++
++	return 0;
++
++err_adap_add:
++unmask_irq_failed:
++	free_irq(pmic_dev->irq, pmic_dev);
++err_irq_request:
++	kfree(pmic_dev);
++	return ret;
++}
++
++static int pmic_i2c_remove(struct platform_device *pdev)
++{
++	free_irq(pmic_dev->irq, pmic_dev);
++	kfree(pmic_dev);
++	return 0;
++}
++
++struct platform_driver pmic_i2c_driver = {
++	.probe = pmic_i2c_probe,
++	.remove = pmic_i2c_remove,
++	.driver = {
++		.name = DRIVER_NAME,
++		.owner = THIS_MODULE,
++	},
++};
++module_platform_driver(pmic_i2c_driver);
++
++MODULE_AUTHOR("Yegnesh Iyer <yegnesh.s.iyer@intel.com");
++MODULE_DESCRIPTION("WCove PMIC I2C Master driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index f7434c0..907a192 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -192,7 +192,7 @@ obj-$(CONFIG_MFD_DLN2)		+= dln2.o
+ obj-$(CONFIG_MFD_RT5033)	+= rt5033.o
+ obj-$(CONFIG_MFD_SKY81452)	+= sky81452.o
+ 
+-intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o
++intel-soc-pmic-objs		:= intel_soc_pmic_core.o intel_soc_pmic_crc.o intel_soc_pmic_i2c.o intel_soc_pmic_wc.o
+ intel-soc-pmic-$(CONFIG_INTEL_PMC_IPC)	+= intel_soc_pmic_bxtwc.o
+ obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel-soc-pmic.o
+ obj-$(CONFIG_MFD_MT6397)	+= mt6397-core.o
+diff --git a/drivers/mfd/intel_soc_pmic_core.c b/drivers/mfd/intel_soc_pmic_core.c
+index d9e15cf..a26e2f2 100644
+--- a/drivers/mfd/intel_soc_pmic_core.c
++++ b/drivers/mfd/intel_soc_pmic_core.c
+@@ -1,5 +1,5 @@
+ /*
+- * intel_soc_pmic_core.c - Intel SoC PMIC MFD Driver
++ * intel_soc_pmic_core.c - Intel SoC PMIC Core Functions
+  *
+  * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
+  *
+@@ -13,191 +13,471 @@
+  * GNU General Public License for more details.
+  *
+  * Author: Yang, Bin <bin.yang@intel.com>
+- * Author: Zhu, Lejun <lejun.zhu@linux.intel.com>
+  */
+ 
++#include <linux/kernel.h>
+ #include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/mutex.h>
+ #include <linux/mfd/core.h>
+-#include <linux/i2c.h>
++#include <linux/err.h>
++#include <linux/irq.h>
+ #include <linux/interrupt.h>
+-#include <linux/gpio/consumer.h>
++#include <linux/workqueue.h>
+ #include <linux/acpi.h>
+-#include <linux/regmap.h>
++#include <linux/version.h>
++#include <linux/gpio.h>
+ #include <linux/mfd/intel_soc_pmic.h>
+-#include <linux/gpio/machine.h>
+-#include <linux/pwm.h>
+ #include "intel_soc_pmic_core.h"
+ 
+-/* Lookup table for the Panel Enable/Disable line as GPIO signals */
+-static struct gpiod_lookup_table panel_gpio_table = {
+-	/* Intel GFX is consumer */
+-	.dev_id = "0000:00:02.0",
+-	.table = {
+-		/* Panel EN/DISABLE */
+-		GPIO_LOOKUP("gpio_crystalcove", 94, "panel", GPIO_ACTIVE_HIGH),
+-	},
++struct cell_dev_pdata {
++	struct list_head	list;
++	const char		*name;
++	void			*data;
++	int			len;
++	int			id;
+ };
++static LIST_HEAD(pdata_list);
+ 
+-/* PWM consumed by the Intel GFX */
+-static struct pwm_lookup crc_pwm_lookup[] = {
+-	PWM_LOOKUP("crystal_cove_pwm", 0, "0000:00:02.0", "pwm_backlight", 0, PWM_POLARITY_NORMAL),
+-};
++static struct intel_soc_pmic *pmic;
++static int cache_offset = -1;
++static int cache_read_val;
++static int cache_write_val;
++static int cache_write_pending;
++static int cache_flags;
++
++struct device *intel_soc_pmic_dev(void)
++{
++	return pmic->dev;
++}
++EXPORT_SYMBOL(intel_soc_pmic_dev);
+ 
+-static int intel_soc_pmic_find_gpio_irq(struct device *dev)
++int intel_soc_pmic_readb(int reg)
+ {
+-	struct gpio_desc *desc;
+-	int irq;
++	int ret;
+ 
+-	desc = devm_gpiod_get_index(dev, "intel_soc_pmic", 0, GPIOD_IN);
+-	if (IS_ERR(desc))
+-		return PTR_ERR(desc);
++	if (!pmic)
++		return -EIO;
+ 
+-	irq = gpiod_to_irq(desc);
+-	if (irq < 0)
+-		dev_warn(dev, "Can't get irq: %d\n", irq);
++	mutex_lock(&pmic->io_lock);
++	ret = pmic->readb(reg);
++	mutex_unlock(&pmic->io_lock);
+ 
+-	return irq;
++	return ret;
+ }
++EXPORT_SYMBOL(intel_soc_pmic_readb);
+ 
+-static int intel_soc_pmic_i2c_probe(struct i2c_client *i2c,
+-				    const struct i2c_device_id *i2c_id)
++int intel_soc_pmic_writeb(int reg, u8 val)
+ {
+-	struct device *dev = &i2c->dev;
+-	const struct acpi_device_id *id;
+-	struct intel_soc_pmic_config *config;
+-	struct intel_soc_pmic *pmic;
+ 	int ret;
+-	int irq;
+ 
+-	id = acpi_match_device(dev->driver->acpi_match_table, dev);
+-	if (!id || !id->driver_data)
+-		return -ENODEV;
++	if (!pmic)
++		return -EIO;
++
++	mutex_lock(&pmic->io_lock);
++	ret = pmic->writeb(reg, val);
++	mutex_unlock(&pmic->io_lock);
++
++	return ret;
++}
++EXPORT_SYMBOL(intel_soc_pmic_writeb);
+ 
+-	config = (struct intel_soc_pmic_config *)id->driver_data;
++int intel_soc_pmic_setb(int reg, u8 mask)
++{
++	int ret;
++	int val;
+ 
+-	pmic = devm_kzalloc(dev, sizeof(*pmic), GFP_KERNEL);
+ 	if (!pmic)
+-		return -ENOMEM;
++		return -EIO;
+ 
+-	dev_set_drvdata(dev, pmic);
++	mutex_lock(&pmic->io_lock);
+ 
+-	pmic->regmap = devm_regmap_init_i2c(i2c, config->regmap_config);
++	val = pmic->readb(reg);
++	val |= mask;
++	ret = pmic->writeb(reg, val);
+ 
+-	/*
+-	 * On some boards the PMIC interrupt may come from a GPIO line. Try to
+-	 * lookup the ACPI table for a such connection and setup a GPIO
+-	 * interrupt if it exists. Otherwise use the IRQ provided by I2C
+-	 */
+-	irq = intel_soc_pmic_find_gpio_irq(dev);
+-	pmic->irq = (irq < 0) ? i2c->irq : irq;
+-
+-	ret = regmap_add_irq_chip(pmic->regmap, pmic->irq,
+-				  config->irq_flags | IRQF_ONESHOT,
+-				  0, config->irq_chip,
+-				  &pmic->irq_chip_data);
+-	if (ret)
+-		return ret;
++	mutex_unlock(&pmic->io_lock);
+ 
+-	ret = enable_irq_wake(pmic->irq);
+-	if (ret)
+-		dev_warn(dev, "Can't enable IRQ as wake source: %d\n", ret);
++	return ret;
++}
++EXPORT_SYMBOL(intel_soc_pmic_setb);
++
++int intel_soc_pmic_clearb(int reg, u8 mask)
++{
++	int ret;
++	int val;
+ 
+-	/* Add lookup table binding for Panel Control to the GPIO Chip */
+-	gpiod_add_lookup_table(&panel_gpio_table);
++	if (!pmic)
++		return -EIO;
+ 
+-	/* Add lookup table for crc-pwm */
+-	pwm_add_table(crc_pwm_lookup, ARRAY_SIZE(crc_pwm_lookup));
++	mutex_lock(&pmic->io_lock);
+ 
+-	ret = mfd_add_devices(dev, -1, config->cell_dev,
+-			      config->n_cell_devs, NULL, 0,
+-			      regmap_irq_get_domain(pmic->irq_chip_data));
+-	if (ret)
+-		goto err_del_irq_chip;
++	val = pmic->readb(reg);
++	val &= ~mask;
++	ret = pmic->writeb(reg, val);
+ 
+-	return 0;
++	mutex_unlock(&pmic->io_lock);
+ 
+-err_del_irq_chip:
+-	regmap_del_irq_chip(pmic->irq, pmic->irq_chip_data);
+ 	return ret;
+ }
++EXPORT_SYMBOL(intel_soc_pmic_clearb);
+ 
+-static int intel_soc_pmic_i2c_remove(struct i2c_client *i2c)
++int intel_soc_pmic_update(int reg, u8 val, u8 mask)
+ {
+-	struct intel_soc_pmic *pmic = dev_get_drvdata(&i2c->dev);
++	int ret;
++
++	if (!pmic)
++		return -EIO;
++
++	mutex_lock(&pmic->io_lock);
++
++	ret = pmic->readb(reg);
++	if (ret < 0)
++		goto err;
++
++	val &= mask;
++	ret &= ~mask;
++	ret |= val;
++	ret = pmic->writeb(reg, ret);
++
++err:
++	mutex_unlock(&pmic->io_lock);
+ 
+-	regmap_del_irq_chip(pmic->irq, pmic->irq_chip_data);
++	return ret;
++}
++EXPORT_SYMBOL(intel_soc_pmic_update);
+ 
+-	/* Remove lookup table for Panel Control from the GPIO Chip */
+-	gpiod_remove_lookup_table(&panel_gpio_table);
++int intel_soc_pmic_set_pdata(const char *name, void *data, int len, int id)
++{
++	struct cell_dev_pdata *pdata;
+ 
+-	/* remove crc-pwm lookup table */
+-	pwm_remove_table(crc_pwm_lookup, ARRAY_SIZE(crc_pwm_lookup));
++	pdata = kzalloc(sizeof(*pdata), GFP_KERNEL);
++	if (!pdata)
++		return -ENOMEM;
+ 
+-	mfd_remove_devices(&i2c->dev);
++	pdata->name = name;
++	pdata->data = data;
++	pdata->len = len;
++	pdata->id = id;
++	list_add_tail(&pdata->list, &pdata_list);
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL(intel_soc_pmic_set_pdata);
++
++static void __pmic_regmap_flush(void)
++{
++	if (cache_write_pending)
++		pmic->writeb(cache_offset, cache_write_val);
++	cache_offset = -1;
++	cache_write_pending = 0;
++}
++
++static void pmic_regmap_flush(void)
++{
++	mutex_lock(&pmic->io_lock);
++	__pmic_regmap_flush();
++	mutex_unlock(&pmic->io_lock);
++}
++
++static int pmic_regmap_write(struct intel_pmic_regmap *map, int val)
++{
++	int ret = 0;
++
++	if (!IS_PMIC_REG_VALID(map))
++		return -ENXIO;
++
++	if (IS_PMIC_REG_INV(map))
++		val = ~val;
++
++	mutex_lock(&pmic->io_lock);
++
++	if (cache_offset == map->offset) {
++		if (cache_flags != map->flags) {
++			dev_err(pmic->dev, "Same reg with diff flags\n");
++			__pmic_regmap_flush();
++		}
++	}
++
++	if (cache_offset != map->offset) {
++		__pmic_regmap_flush();
++		if (IS_PMIC_REG_WO(map) || IS_PMIC_REG_W1C(map)) {
++			cache_write_val = 0;
++			cache_read_val = pmic->readb(map->offset);
++		} else {
++			cache_read_val = pmic->readb(map->offset);
++			cache_write_val = cache_read_val;
++		}
++		if (cache_read_val < 0) {
++			dev_err(pmic->dev, "Register access error\n");
++			ret = -EIO;
++			goto err;
++		}
++		cache_offset = map->offset;
++		cache_flags = map->flags;
++	}
++
++	val = ((val & map->mask) << map->shift);
++	cache_write_val &= ~(map->mask << map->shift);
++	cache_write_val |= val;
++	cache_write_pending = 1;
++
++	if (!IS_PMIC_REG_WO(map) && !IS_PMIC_REG_W1C(map))
++		cache_read_val = cache_write_val;
++
++err:
++	dev_dbg(pmic->dev, "offset=%x, shift=%x, mask=%x, flags=%x\n",
++		map->offset, map->shift, map->mask, map->flags);
++	dev_dbg(pmic->dev, "cache_read=%x, cache_write=%x, ret=%x\n",
++		cache_read_val, cache_write_val, ret);
++
++	mutex_unlock(&pmic->io_lock);
++
++	return ret;
++}
+ 
+-static void intel_soc_pmic_shutdown(struct i2c_client *i2c)
++static int pmic_regmap_read(struct intel_pmic_regmap *map)
+ {
+-	struct intel_soc_pmic *pmic = dev_get_drvdata(&i2c->dev);
++	int ret = 0;
++
++	if (!IS_PMIC_REG_VALID(map))
++		return -ENXIO;
++
++	mutex_lock(&pmic->io_lock);
++
++	if (cache_offset == map->offset) {
++		if (cache_flags != map->flags) {
++			dev_err(pmic->dev, "Same reg with diff flags\n");
++			__pmic_regmap_flush();
++		}
++	}
++
++	if (cache_offset != map->offset) {
++		__pmic_regmap_flush();
++		if (IS_PMIC_REG_WO(map) || IS_PMIC_REG_W1C(map)) {
++			cache_write_val = 0;
++			cache_read_val = pmic->readb(map->offset);
++		} else {
++			cache_read_val = pmic->readb(map->offset);
++			cache_write_val = cache_read_val;
++		}
++		if (cache_read_val < 0) {
++			dev_err(pmic->dev, "Register access error\n");
++			ret = -EIO;
++			goto err;
++		}
++		cache_offset = map->offset;
++		cache_flags = map->flags;
++	}
++
++	if (IS_PMIC_REG_INV(map))
++		ret = ~cache_read_val;
++	else
++		ret = cache_read_val;
++
++	ret = (ret >> map->shift) & map->mask;
++	if (!IS_PMIC_REG_WO(map) && !IS_PMIC_REG_W1C(map))
++		cache_write_val = cache_read_val;
++
++err:
++	dev_dbg(pmic->dev, "offset=%x, shift=%x, mask=%x, flags=%x\n",
++		map->offset, map->shift, map->mask, map->flags);
++	dev_dbg(pmic->dev, "cache_read=%x, cache_write=%x, ret=%x\n",
++		cache_read_val, cache_write_val, ret);
++
++	mutex_unlock(&pmic->io_lock);
+ 
+-	disable_irq(pmic->irq);
++	return ret;
++}
+ 
+-	return;
++static void pmic_irq_enable(struct irq_data *data)
++{
++	clear_bit((data->irq - pmic->irq_base) % 32,
++		  &(pmic->irq_mask[(data->irq - pmic->irq_base) / 32]));
++	pmic->irq_need_update = 1;
+ }
+ 
+-#if defined(CONFIG_PM_SLEEP)
+-static int intel_soc_pmic_suspend(struct device *dev)
++static void pmic_irq_disable(struct irq_data *data)
+ {
+-	struct intel_soc_pmic *pmic = dev_get_drvdata(dev);
++	set_bit((data->irq - pmic->irq_base) % 32,
++		&(pmic->irq_mask[(data->irq - pmic->irq_base) / 32]));
++	pmic->irq_need_update = 1;
++}
+ 
+-	disable_irq(pmic->irq);
++static void pmic_irq_sync_unlock(struct irq_data *data)
++{
++	struct intel_pmic_regmap *map;
+ 
+-	return 0;
++	dev_dbg(pmic->dev, "[%s]: irq_mask = %lx", __func__,
++			pmic->irq_mask[(data->irq - pmic->irq_base)/32]);
++
++	if (pmic->irq_need_update) {
++		map = &pmic->irq_regmap[(data->irq - pmic->irq_base)].mask;
++
++		if (test_bit((data->irq - pmic->irq_base) % 32,
++			&(pmic->irq_mask[(data->irq - pmic->irq_base) / 32])))
++			pmic_regmap_write(map, map->mask);
++		else
++			pmic_regmap_write(map, 0);
++
++		pmic->irq_need_update = 0;
++		pmic_regmap_flush();
++	}
++	mutex_unlock(&pmic->irq_lock);
++}
++
++static void pmic_irq_lock(struct irq_data *data)
++{
++	mutex_lock(&pmic->irq_lock);
++}
++
++static irqreturn_t pmic_irq_isr(int irq, void *data)
++{
++	return IRQ_WAKE_THREAD;
++}
++
++static irqreturn_t pmic_irq_thread(int irq, void *data)
++{
++	int i;
++
++	mutex_lock(&pmic->irq_lock);
++
++	for (i = 0; i < pmic->irq_num; i++) {
++		if (test_bit(i % 32, &(pmic->irq_mask[i / 32])))
++			continue;
++
++		if (pmic_regmap_read(&pmic->irq_regmap[i].status) > 0) {
++			pmic_regmap_write(&pmic->irq_regmap[i].ack,
++				pmic->irq_regmap[i].ack.mask);
++			handle_nested_irq(pmic->irq_base + i);
++		}
++	}
++
++	pmic_regmap_flush();
++
++	mutex_unlock(&pmic->irq_lock);
++
++	return IRQ_HANDLED;
+ }
+ 
+-static int intel_soc_pmic_resume(struct device *dev)
++static struct irq_chip pmic_irq_chip = {
++	.name			= "intel_soc_pmic",
++	.irq_bus_lock		= pmic_irq_lock,
++	.irq_bus_sync_unlock	= pmic_irq_sync_unlock,
++	.irq_disable		= pmic_irq_disable,
++	.irq_enable		= pmic_irq_enable,
++};
++
++static int pmic_irq_init(void)
+ {
+-	struct intel_soc_pmic *pmic = dev_get_drvdata(dev);
++	int cur_irq;
++	int ret;
++	int i;
++	struct intel_pmic_regmap *map;
++
++	/* Mostly, it can help to increase cache hit if merge same register
++	 * access in one loop
++	 */
++	for (i = 0; i < pmic->irq_num; i++) {
++		map = &pmic->irq_regmap[i].mask;
++		if (IS_PMIC_REG_VALID(map)) {
++			pmic_regmap_write(map, map->mask);
++			set_bit(i % 32, &(pmic->irq_mask[i / 32]));
++		}
++	}
++	for (i = 0; i < pmic->irq_num; i++) {
++		map = &pmic->irq_regmap[i].ack;
++		if (IS_PMIC_REG_VALID(map))
++			pmic_regmap_write(map, map->mask);
++	}
++	pmic_regmap_flush();
++
++	pmic->irq_base = irq_alloc_descs(-1, INTEL_PMIC_IRQBASE,
++					 pmic->irq_num, 0);
++	if (pmic->irq_base < 0) {
++		dev_warn(pmic->dev, "Failed to allocate IRQs: %d\n",
++			 pmic->irq_base);
++		pmic->irq_base = 0;
++		return -EINVAL;
++	}
++	dev_info(pmic->dev, "PMIC IRQ Base:%d\n", pmic->irq_base);
++
++	/* Register them with genirq */
++	for (cur_irq = pmic->irq_base;
++	     cur_irq < pmic->irq_num + pmic->irq_base;
++	     cur_irq++) {
++		irq_set_chip_data(cur_irq, pmic);
++		irq_set_chip_and_handler(cur_irq, &pmic_irq_chip,
++					 handle_edge_irq);
++		irq_set_nested_thread(cur_irq, 1);
++		irq_set_noprobe(cur_irq);
++	}
++
++	ret = request_threaded_irq(pmic->irq, pmic_irq_isr, pmic_irq_thread,
++				   pmic->irq_flags, "intel_soc_pmic", pmic);
++	if (ret != 0) {
++		dev_err(pmic->dev, "Failed to request IRQ %d: %d\n",
++			pmic->irq, ret);
++		if (gpio_is_valid(pmic->pmic_int_gpio))
++			gpio_free(pmic->pmic_int_gpio);
++		return ret;
++	}
+ 
+-	enable_irq(pmic->irq);
++	ret = enable_irq_wake(pmic->irq);
++	if (ret != 0)
++		dev_warn(pmic->dev, "Can't enable IRQ as wake source: %d\n",
++			 ret);
+ 
+ 	return 0;
+ }
+-#endif
+ 
+-static SIMPLE_DEV_PM_OPS(intel_soc_pmic_pm_ops, intel_soc_pmic_suspend,
+-			 intel_soc_pmic_resume);
++int intel_pmic_add(struct intel_soc_pmic *chip)
++{
++	int i, ret;
++	struct cell_dev_pdata *pdata;
++
++	if (pmic != NULL)
++		return -EBUSY;
++
++	mutex_init(&chip->io_lock);
++	mutex_init(&chip->irq_lock);
++
++	pmic = chip;
++
++	if (pmic->init) {
++		ret = pmic->init();
++		if (ret != 0) {
++			pmic = NULL;
++			return ret;
++		}
++	}
++
++	pmic_irq_init();
++
++	for (i = 0; pmic->cell_dev[i].name != NULL; i++) {
++		list_for_each_entry(pdata, &pdata_list, list) {
++			if (!strcmp(pdata->name, pmic->cell_dev[i].name) &&
++					(pdata->id == pmic->cell_dev[i].id)) {
++				pmic->cell_dev[i].platform_data = pdata->data;
++				pmic->cell_dev[i].pdata_size = pdata->len;
++			}
++		}
++	}
++
++	return mfd_add_devices(pmic->dev, -1, pmic->cell_dev, i,
++			NULL, pmic->irq_base, NULL);
++}
+ 
+-static const struct i2c_device_id intel_soc_pmic_i2c_id[] = {
+-	{ }
+-};
+-MODULE_DEVICE_TABLE(i2c, intel_soc_pmic_i2c_id);
++int intel_pmic_remove(struct intel_soc_pmic *chip)
++{
++	if (pmic != chip)
++		return -ENODEV;
+ 
+-#if defined(CONFIG_ACPI)
+-static const struct acpi_device_id intel_soc_pmic_acpi_match[] = {
+-	{"INT33FD", (kernel_ulong_t)&intel_soc_pmic_config_crc},
+-	{ },
+-};
+-MODULE_DEVICE_TABLE(acpi, intel_soc_pmic_acpi_match);
+-#endif
+-
+-static struct i2c_driver intel_soc_pmic_i2c_driver = {
+-	.driver = {
+-		.name = "intel_soc_pmic_i2c",
+-		.pm = &intel_soc_pmic_pm_ops,
+-		.acpi_match_table = ACPI_PTR(intel_soc_pmic_acpi_match),
+-	},
+-	.probe = intel_soc_pmic_i2c_probe,
+-	.remove = intel_soc_pmic_i2c_remove,
+-	.id_table = intel_soc_pmic_i2c_id,
+-	.shutdown = intel_soc_pmic_shutdown,
+-};
++	mfd_remove_devices(pmic->dev);
++	pmic = NULL;
+ 
+-module_i2c_driver(intel_soc_pmic_i2c_driver);
++	return 0;
++}
+ 
+-MODULE_DESCRIPTION("I2C driver for Intel SoC PMIC");
+-MODULE_LICENSE("GPL v2");
+-MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com>");
+-MODULE_AUTHOR("Zhu, Lejun <lejun.zhu@linux.intel.com>");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com");
+diff --git a/drivers/mfd/intel_soc_pmic_core.h b/drivers/mfd/intel_soc_pmic_core.h
+index ff2464b..59608da 100644
+--- a/drivers/mfd/intel_soc_pmic_core.h
++++ b/drivers/mfd/intel_soc_pmic_core.h
+@@ -13,7 +13,6 @@
+  * GNU General Public License for more details.
+  *
+  * Author: Yang, Bin <bin.yang@intel.com>
+- * Author: Zhu, Lejun <lejun.zhu@linux.intel.com>
+  */
+ 
+ #ifndef __INTEL_SOC_PMIC_CORE_H__
+@@ -26,7 +25,77 @@ struct intel_soc_pmic_config {
+ 	const struct regmap_config *regmap_config;
+ 	const struct regmap_irq_chip *irq_chip;
+ };
++#define INTEL_PMIC_IRQ_MAX	128
++#define INTEL_PMIC_REG_NULL	{-1,}
+ 
+-extern struct intel_soc_pmic_config intel_soc_pmic_config_crc;
++#define INTEL_PMIC_REG_INV	(1<<0) /*value revert*/
++#define INTEL_PMIC_REG_WO	(1<<1) /*write only*/
++#define INTEL_PMIC_REG_RO	(1<<2) /*read only*/
++#define INTEL_PMIC_REG_W1C	(1<<3) /*write 1 clear*/
++#define INTEL_PMIC_REG_RC	(1<<4) /*read clear*/
++#define IS_PMIC_REG_INV(_map)	(_map->flags & INTEL_PMIC_REG_INV)
++#define IS_PMIC_REG_WO(_map)	(_map->flags & INTEL_PMIC_REG_WO)
++#define IS_PMIC_REG_RO(_map)	(_map->flags & INTEL_PMIC_REG_RO)
++#define IS_PMIC_REG_W1C(_map)	(_map->flags & INTEL_PMIC_REG_W1C)
++#define IS_PMIC_REG_RC(_map)	(_map->flags & INTEL_PMIC_REG_RC)
++#define IS_PMIC_REG_VALID(_map) \
++	((_map->mask != 0) && (_map->offset >= 0))
++
++#define PMIC_IRQREG_MASK	0
++#define PMIC_IRQREG_STATUS	1
++#define PMIC_IRQREG_ACK		2
++
++struct intel_pmic_regmap {
++	int				offset;
++	int				shift;
++	int				mask;
++	int				flags;
++};
++
++struct intel_pmic_irqregmap {
++	struct intel_pmic_regmap	mask;
++	struct intel_pmic_regmap	status;
++	struct intel_pmic_regmap	ack;
++};
++
++struct acpi_lpat {
++	int tmp;
++	int raw;
++};
++
++struct intel_pmic_opregion {
++	struct acpi_lpat *lpat;
++	int lpat_count;
++};
++
++struct intel_soc_pmic {
++	const char			*label;
++	struct device			*dev;
++	struct mutex			io_lock; /* For registers */
++	struct mutex			irq_lock; /* irq_bus_lock */
++	int				irq_need_update;
++	int				irq;
++	unsigned long			irq_flags;
++	int				irq_num;
++	int				irq_base;
++	unsigned long			irq_mask[INTEL_PMIC_IRQ_MAX/32];
++	int				pmic_int_gpio;
++	int				default_client;
++	int				(*init)(void);
++	int				(*readb)(int);
++	int				(*writeb)(int, u8);
++	struct intel_pmic_irqregmap	*irq_regmap;
++	struct mfd_cell			*cell_dev;
++	struct intel_pmic_opregion	*opregion;
++};
++
++int intel_pmic_add(struct intel_soc_pmic *chip);
++int intel_pmic_remove(struct intel_soc_pmic *chip);
++void intel_pmic_install_handlers(struct intel_soc_pmic *);
++
++extern struct intel_soc_pmic crystal_cove_pmic;
++extern struct intel_soc_pmic dollar_cove_pmic;
++extern struct intel_soc_pmic dollar_cove_ti_pmic;
++extern struct intel_soc_pmic whiskey_cove_pmic;
+ 
+ #endif	/* __INTEL_SOC_PMIC_CORE_H__ */
+diff --git a/drivers/mfd/intel_soc_pmic_i2c.c b/drivers/mfd/intel_soc_pmic_i2c.c
+new file mode 100644
+index 0000000..600c7f2
+--- /dev/null
++++ b/drivers/mfd/intel_soc_pmic_i2c.c
+@@ -0,0 +1,197 @@
++/*
++ * intel_soc_pmic_i2c.c - Intel SoC PMIC MFD Driver
++ *
++ * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * Author: Yang, Bin <bin.yang@intel.com>
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/mfd/core.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/workqueue.h>
++#include <linux/acpi.h>
++#include <linux/version.h>
++#include <linux/gpio/consumer.h>
++#include <linux/mfd/intel_soc_pmic.h>
++#include "intel_soc_pmic_core.h"
++
++static struct i2c_client *pmic_i2c_client;
++static struct intel_soc_pmic *pmic_i2c;
++
++#define I2C_ADDR_MASK		0xFF00
++#define I2C_ADDR_SHIFT		8
++#define I2C_REG_MASK		0xFF
++
++static int pmic_i2c_readb(int reg)
++{
++	if (reg & I2C_ADDR_MASK)
++		pmic_i2c_client->addr = (reg & I2C_ADDR_MASK)
++						>> I2C_ADDR_SHIFT;
++	else
++		pmic_i2c_client->addr = 0x6e;
++
++	reg &= I2C_REG_MASK;
++	return i2c_smbus_read_byte_data(pmic_i2c_client, reg);
++}
++
++static int pmic_i2c_writeb(int reg, u8 val)
++{
++	if (reg & I2C_ADDR_MASK)
++		pmic_i2c_client->addr = (reg & I2C_ADDR_MASK)
++						>> I2C_ADDR_SHIFT;
++	else
++		pmic_i2c_client->addr = 0x6e;
++
++	reg &= I2C_REG_MASK;
++	return i2c_smbus_write_byte_data(pmic_i2c_client, reg, val);
++}
++
++static void pmic_shutdown(struct i2c_client *client)
++{
++	disable_irq(pmic_i2c_client->irq);
++}
++
++static int pmic_suspend(struct device *dev)
++{
++	disable_irq(pmic_i2c_client->irq);
++	return 0;
++}
++
++static int pmic_resume(struct device *dev)
++{
++	enable_irq(pmic_i2c_client->irq);
++	return 0;
++}
++
++static const struct dev_pm_ops pmic_pm_ops = {
++	SET_SYSTEM_SLEEP_PM_OPS(pmic_suspend, pmic_resume)
++};
++
++static int pmic_i2c_lookup_gpio(struct device *dev, int acpi_index)
++{
++	struct gpio_desc *desc;
++	int gpio;
++
++	desc = gpiod_get_index(dev, KBUILD_MODNAME, acpi_index, 0);
++	if (IS_ERR(desc))
++		return PTR_ERR(desc);
++
++	gpio = desc_to_gpio(desc);
++
++	gpiod_put(desc);
++
++	return gpio;
++}
++
++static int pmic_i2c_probe(struct i2c_client *i2c,
++			  const struct i2c_device_id *id)
++{
++	int ret;
++
++	if (pmic_i2c_client != NULL || pmic_i2c != NULL)
++		return -EBUSY;
++
++	if (!id)
++		return -ENODEV;
++
++	pmic_i2c	= (struct intel_soc_pmic *)id->driver_data;
++	pmic_i2c_client	= i2c;
++	pmic_i2c->dev	= &i2c->dev;
++	pmic_i2c->irq	= i2c->irq;
++	pmic_i2c->default_client = i2c->addr;
++	pmic_i2c->pmic_int_gpio = pmic_i2c_lookup_gpio(pmic_i2c->dev, 0);
++	pmic_i2c->readb	= pmic_i2c_readb;
++	pmic_i2c->writeb = pmic_i2c_writeb;
++
++	dev_err(&i2c->dev, "PMIC INT GPIO %d\n", pmic_i2c->pmic_int_gpio);
++	if (gpio_is_valid(pmic_i2c->pmic_int_gpio)) {
++		ret = gpio_request_one(pmic_i2c->pmic_int_gpio,
++				       GPIOF_DIR_IN, "PMIC Interrupt");
++		if (ret) {
++			dev_err(pmic_i2c->dev,
++				"Request PMIC_INT gpio error %d\n", ret);
++			return ret;
++		}
++
++		pmic_i2c->irq = gpio_to_irq(pmic_i2c->pmic_int_gpio);
++		pmic_i2c_client->irq = pmic_i2c->irq;
++	} else
++		dev_err(&i2c->dev, "PMIC INT GPIO was not valid\n");
++
++	return intel_pmic_add(pmic_i2c);
++}
++
++static int pmic_i2c_remove(struct i2c_client *i2c)
++{
++	int ret = intel_pmic_remove(pmic_i2c);
++
++	pmic_i2c_client = NULL;
++	pmic_i2c = NULL;
++
++	return ret;
++}
++
++static const struct i2c_device_id pmic_i2c_id[] = {
++	{ "whiskey_cove", (kernel_ulong_t)&whiskey_cove_pmic},
++	{ "INT34D3", (kernel_ulong_t)&whiskey_cove_pmic},
++	{ "INT34D3:00", (kernel_ulong_t)&whiskey_cove_pmic},
++	{ "INT34D3:00:6e", (kernel_ulong_t)&whiskey_cove_pmic},
++	{ }
++};
++MODULE_DEVICE_TABLE(i2c, pmic_i2c_id);
++
++static struct acpi_device_id pmic_acpi_match[] = {
++	{ "INT34D3", (kernel_ulong_t)&whiskey_cove_pmic},
++	{ },
++};
++MODULE_DEVICE_TABLE(acpi, pmic_acpi_match);
++
++static struct i2c_driver pmic_i2c_driver = {
++	.driver = {
++		.name = "intel_soc_pmic_i2c",
++		.owner = THIS_MODULE,
++		.pm = &pmic_pm_ops,
++		.acpi_match_table = ACPI_PTR(pmic_acpi_match),
++	},
++	.probe = pmic_i2c_probe,
++	.remove = pmic_i2c_remove,
++	.id_table = pmic_i2c_id,
++	.shutdown = pmic_shutdown,
++};
++
++static int __init pmic_i2c_init(void)
++{
++	int ret;
++
++	ret = i2c_add_driver(&pmic_i2c_driver);
++	if (ret != 0)
++		pr_err("Failed to register pmic I2C driver: %d\n", ret);
++
++	return ret;
++}
++fs_initcall(pmic_i2c_init);
++
++static void __exit pmic_i2c_exit(void)
++{
++	i2c_del_driver(&pmic_i2c_driver);
++}
++module_exit(pmic_i2c_exit);
++
++MODULE_DESCRIPTION("I2C driver for Intel SoC PMIC");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Yang, Bin <bin.yang@intel.com>");
+diff --git a/drivers/mfd/intel_soc_pmic_wc.c b/drivers/mfd/intel_soc_pmic_wc.c
+new file mode 100644
+index 0000000..9ae24fe
+--- /dev/null
++++ b/drivers/mfd/intel_soc_pmic_wc.c
+@@ -0,0 +1,938 @@
++/*
++ * Whiskey Cove  --  Device access for Intel WhiskeyCove PMIC
++ *
++ * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * Author: Yang Bin <bin.yang@intel.com>
++ * Author: Kannappan <r.kannappan@intel.com>
++ */
++
++#include <linux/kernel.h>
++#include <linux/module.h>
++#include <linux/delay.h>
++#include <linux/mfd/core.h>
++#include <linux/err.h>
++#include <linux/i2c.h>
++#include <linux/irq.h>
++#include <linux/interrupt.h>
++#include <linux/mfd/intel_soc_pmic.h>
++#include <linux/acpi.h>
++#include <linux/version.h>
++#include <asm/intel_wcove_bcu.h>
++#include <linux/iio/intel_wcove_gpadc.h>
++#include <linux/iio/iio.h>
++#include <linux/iio/machine.h>
++#include <linux/iio/types.h>
++#include <linux/power/intel_pmic_ccsm.h>
++#include <linux/mfd/intel_soc_pmic_wcove.h>
++#include "./intel_soc_pmic_core.h"
++#include <linux/regulator/intel_whiskey_cove_pmic.h>
++#include <linux/init.h>
++#include <linux/gpio.h>
++#include <linux/gpio/consumer.h>
++#include <linux/lnw_gpio.h>
++#include <linux/regulator/machine.h>
++#include <linux/regulator/fixed.h>
++#include <linux/regulator/driver.h>
++#include <linux/regulator/gpio-regulator.h>
++#include <linux/platform_device.h>
++
++
++#define CHIPID		0x00
++#define CHIPVER	0x01
++
++#define IRQLVL1	0x02
++#define PWRSRCIRQ	0x03
++#define THRM0IRQ	0x04
++#define THRM1IRQ	0x05
++#define THRM2IRQ	0x06
++#define BCUIRQ		0x07
++#define ADCIRQ		0x08
++#define THRM3IRQ	0xD9
++#define CHGRIRQ		0x0A
++#define CRITIRQ		0x37
++
++#define MIRQLVL1	0x0E
++#define MPWRSRCIRQ	0x0F
++#define MTHRMIRQ0	0x0D
++#define MTHRMIRQ1	0x12
++#define MTHRMIRQ2	0x13
++#define MTHRMIRQ3	0xDA
++#define MCHGRIRQ	0x17
++
++#define STHRMIRQ0	0x4F19
++#define STHRMIRQ1	0x4F1A
++#define STHRMIRQ2	0x4F1B
++
++#define FPO0_USB_COMP_OFFSET 0x01
++
++static bool wcove_init_done;
++
++static struct gpadc_regmap_t whiskeycove_gpadc_regmaps[GPADC_NUM_CHANNELS] = {
++	{"VBAT",	5, 0,	0x4F03, 0x4F04, 0xFF, 0xFF, 0xFF, 0xFF},
++	{"BATID",	4, 1,	0x4F06, 0x4F07, 0xFF, 0xFF, 0xFF, 0xFF},
++	{"PMICTEMP",	3, 2,	0x4F42,	0x4F43, 0x4F33, 0x4F34, 0x4F33, 0x4F34},
++	{"BATTEMP0",	2, 3,	0x4F15, 0x4F16, 0xFF, 0xFF, 0xFF, 0xFF},
++	{"BATTEMP1",	2, 3,	0x4F17, 0x4F18, 0xFF, 0xFF, 0xFF, 0xFF},
++	{"SYSTEMP0",	3, 2,	0x4F38, 0x4F39, 0x4F23, 0x4F24, 0x4F25, 0x4F26},
++	{"SYSTEMP1",	3, 2,	0x4F3A, 0x4F3B, 0x4F27, 0x4F28, 0x4F29, 0x4F2A},
++	{"SYSTEMP2",	3, 2,	0x4F3C, 0x4F3D, 0x4F2B, 0x4F2C, 0x4F2D, 0x4F2E},
++	{"USBID",	1, 5,	0x4F08, 0x4F09, 0xFF, 0xFF, 0xFF, 0xFF},
++	{"PEAK",	7, 6,	0x4F13, 0x4F14, 0xFF, 0xFF, 0xFF, 0xFF},
++	{"AGND",	6, 4,	0x4F0A, 0x4F0B, 0xFF, 0xFF, 0xFF, 0xFF},
++	{"VREF",	6, 4,	0x4F0A, 0x4F0B, 0xFF, 0xFF, 0xFF, 0xFF},
++};
++
++static struct gpadc_regs_t whiskeycove_gpadc_regs = {
++	.gpadcreq	=	0x4F02,
++	.gpadcreq_irqen	=	0,
++	.gpadcreq_busy	=	(1 << 0),
++	.mirqlvl1	=	0x6e0E,
++	.mirqlvl1_adc	=	(1 << 3),
++	.adc1cntl	=	0x4F05,
++	.adcirq		=	0x6E08,
++	.madcirq	=	0x6E15,
++	.thrmmonctl	=	0x4F1E,
++	.batthermonctl =	0x4F1F,
++	.vbatmonctl	=	0x4F20,
++	.gpmonctl	=	0x4F21,
++};
++
++#define MSIC_ADC_MAP(_adc_channel_label,			\
++		     _consumer_dev_name,	                \
++		     _consumer_channel)	                 \
++	{	                                               \
++		.adc_channel_label = _adc_channel_label,	\
++		.consumer_dev_name = _consumer_dev_name,	\
++		.consumer_channel = _consumer_channel,	  \
++	}
++
++static struct iio_map wc_iio_maps[] = {
++	MSIC_ADC_MAP("CH0", "VIBAT", "VBAT"),
++	MSIC_ADC_MAP("CH1", "BATID", "BATID"),
++	MSIC_ADC_MAP("CH2", "PMICTEMP", "PMICTEMP"),
++	MSIC_ADC_MAP("CH3", "BATTEMP", "BATTEMP0"),
++	MSIC_ADC_MAP("CH4", "BATTEMP", "BATTEMP1"),
++	MSIC_ADC_MAP("CH5", "SYSTEMP", "SYSTEMP0"),
++	MSIC_ADC_MAP("CH6", "SYSTEMP", "SYSTEMP1"),
++	MSIC_ADC_MAP("CH7", "SYSTEMP", "SYSTEMP2"),
++	MSIC_ADC_MAP("CH8", "USBID", "USBID"),
++	MSIC_ADC_MAP("CH9", "PEAK", "PEAK"),
++	MSIC_ADC_MAP("CH10", "GPMEAS", "AGND"),
++	MSIC_ADC_MAP("CH11", "GPMEAS", "VREF"),
++	{ },
++};
++
++#define MSIC_ADC_CHANNEL(_type, _channel, _datasheet_name) \
++	{	                       \
++		.indexed = 1,	   \
++		.type = _type,	  \
++		.channel = _channel,    \
++		.datasheet_name = _datasheet_name,      \
++	}
++
++static const struct iio_chan_spec const wc_adc_channels[] = {
++	MSIC_ADC_CHANNEL(IIO_VOLTAGE, 0, "CH0"),
++	MSIC_ADC_CHANNEL(IIO_VOLTAGE, 1, "CH1"),
++	MSIC_ADC_CHANNEL(IIO_TEMP, 2, "CH2"),
++	MSIC_ADC_CHANNEL(IIO_TEMP, 3, "CH3"),
++	MSIC_ADC_CHANNEL(IIO_TEMP, 4, "CH4"),
++	MSIC_ADC_CHANNEL(IIO_TEMP, 5, "CH5"),
++	MSIC_ADC_CHANNEL(IIO_TEMP, 6, "CH6"),
++	MSIC_ADC_CHANNEL(IIO_TEMP, 7, "CH7"),
++	MSIC_ADC_CHANNEL(IIO_VOLTAGE, 8, "CH8"),
++	MSIC_ADC_CHANNEL(IIO_VOLTAGE, 9, "CH9"),
++	MSIC_ADC_CHANNEL(IIO_VOLTAGE, 10, "CH10"),
++	MSIC_ADC_CHANNEL(IIO_VOLTAGE, 11, "CH11"),
++};
++
++enum {
++	PWRSRC_LVL1 = 0,
++	THRM_LVL1,
++	BCU_IRQ,
++	ADC_IRQ,
++	CHGR_LVL1,
++	GPIO_IRQ,
++	CRIT_IRQ = 7,
++	PWRSRC_IRQ,
++	THRM1_IRQ,
++	BATALRT_IRQ,
++	BATZC_IRQ,
++	CHGR_IRQ,
++	THRM0_IRQ,
++	PMICI2C_IRQ,
++	THRM3_IRQ,
++	CTYPE_IRQ,
++};
++
++struct intel_soc_pmic whiskey_cove_pmic;
++
++static struct pmic_regs pmic_wcove_regmap = {
++	.pmic_id = 0x00,
++	.pmic_irqlvl1 = WC_IRQLVL1_ADDR,
++	.pmic_mirqlvl1 = WC_IRQLVL1_MASK_ADDR,
++	.pmic_chgrirq0 = WC_CHGRIRQ0_ADDR,
++	.pmic_schgrirq0 = WC_SCHGRIRQ0_ADDR,
++	.pmic_mchgrirq0 = WC_MCHGRIRQ0_ADDR,
++	.pmic_chgrirq1 = WC_PWRSRC_ADDR,
++	.pmic_schgrirq1 = WC_SPWRSRC_ADDR,
++	.pmic_mchgrirq1 = WC_MPWRSRC_ADDR,
++	.pmic_chgrctrl0 = WC_CHGRCTRL0_ADDR,
++	.pmic_chgrctrl1 = WC_CHGRCTRL1_ADDR,
++	.pmic_chgdisctrl = WC_CHGDISCTRL_ADDR,
++	.pmic_lowbattdet0 = WC_LOWBATTDET0_ADDR,
++	.pmic_lowbattdet1 = WC_LOWBATTDET1_ADDR,
++	.pmic_battdetctrl = WC_BATTDETCTRL_ADDR,
++	.pmic_vbusdetctrl = WC_VBUSDETCTRL_ADDR,
++	.pmic_vdcindetctrl = WC_VDCINDETCTRL_ADDR,
++	.pmic_chgrstatus = WC_CHGRSTATUS_ADDR,
++	.pmic_usbidctrl = WC_USBIDCTRL_ADDR,
++	.pmic_usbidstat = WC_USBIDSTAT_ADDR,
++	.pmic_wakesrc = WC_WAKESRC_ADDR,
++	.pmic_usbphyctrl = WC_USBPHYCTRL_ADDR,
++	.pmic_dbg_usbbc1 = WC_DBGUSBBC1_ADDR,
++	.pmic_dbg_usbbc2 = WC_DBGUSBBC2_ADDR,
++	.pmic_dbg_usbbcstat = WC_DBGUSBBCSTAT_ADDR,
++	.pmic_usbpath = WC_USBPATH_ADDR,
++	.pmic_usbsrcdetstat = WC_USBSRCDETSTATUS_ADDR,
++	.pmic_chrttaddr = WC_CHRTTADDR_ADDR,
++	.pmic_chrttdata = WC_CHRTTDATA_ADDR,
++	.pmic_thrmbatzone = WC_THRMBATZONE_ADDR,
++	.pmic_thrmzn0h = WC_THRMZN0H_ADDR,
++	.pmic_thrmzn0l = WC_THRMZN0L_ADDR,
++	.pmic_thrmzn1h = WC_THRMZN1H_ADDR,
++	.pmic_thrmzn1l = WC_THRMZN1L_ADDR,
++	.pmic_thrmzn2h = WC_THRMZN2H_ADDR,
++	.pmic_thrmzn2l = WC_THRMZN2L_ADDR,
++	.pmic_thrmzn3h = WC_THRMZN3H_ADDR,
++	.pmic_thrmzn3l = WC_THRMZN3L_ADDR,
++	.pmic_thrmzn4h = WC_THRMZN4H_ADDR,
++	.pmic_thrmzn4l = WC_THRMZN4L_ADDR,
++	.pmic_thrmirq0 = WC_THRMIRQ0_ADDR,
++	.pmic_mthrmirq0 = WC_MTHRMIRQ0_ADDR,
++	.pmic_sthrmirq0 = WC_STHRMIRQ0_ADDR,
++	.pmic_thrmirq1 = WC_THRMIRQ1_ADDR,
++	.pmic_mthrmirq1 = WC_MTHRMIRQ1_ADDR,
++	.pmic_sthrmirq1 = WC_STHRMIRQ1_ADDR,
++	.pmic_thrmirq2 = WC_THRMIRQ2_ADDR,
++	.pmic_mthrmirq2 = WC_MTHRMIRQ2_ADDR,
++	.pmic_sthrmirq2 = WC_STHRMIRQ2_ADDR,
++};
++
++static struct pmic_ccsm_int_cfg wc_intmap[] = {
++	{ PMIC_INT_VBUS,
++		WC_PWRSRC_ADDR, WC_MPWRSRC_ADDR,
++		WC_SPWRSRC_ADDR, 0x01 },
++	{ PMIC_INT_DCIN,
++		WC_PWRSRC_ADDR, WC_MPWRSRC_ADDR,
++		WC_SPWRSRC_ADDR, 0x02 },
++	{ PMIC_INT_BATTDET,
++		WC_PWRSRC_ADDR, WC_MPWRSRC_ADDR,
++		WC_SPWRSRC_ADDR, 0x04 },
++	{ PMIC_INT_USBIDFLTDET,
++		WC_PWRSRC_ADDR, WC_MPWRSRC_ADDR,
++		WC_SPWRSRC_ADDR, 0x08 },
++	{ PMIC_INT_USBIDGNDDET,
++		WC_PWRSRC_ADDR, WC_MPWRSRC_ADDR,
++		WC_SPWRSRC_ADDR, 0x10 },
++	{ PMIC_INT_CTYP,
++		WC_CHGRIRQ0_ADDR, WC_SCHGRIRQ0_ADDR,
++		WC_MCHGRIRQ0_ADDR, 0x10 },
++	{ PMIC_INT_BZIRQ,
++		WC_THRMIRQ1_ADDR, WC_MTHRMIRQ1_ADDR,
++		WC_STHRMIRQ1_ADDR, 0x80 },
++	{ PMIC_INT_BATCRIT,
++		WC_THRMIRQ1_ADDR, WC_MTHRMIRQ1_ADDR,
++		WC_STHRMIRQ1_ADDR, 0x10 },
++	{ PMIC_INT_BAT0ALRT0,
++		WC_THRMIRQ2_ADDR, WC_MTHRMIRQ2_ADDR,
++		WC_STHRMIRQ2_ADDR, 0x01 },
++	{ PMIC_INT_BAT1ALRT0,
++		WC_THRMIRQ2_ADDR, WC_MTHRMIRQ2_ADDR,
++		WC_STHRMIRQ2_ADDR, 0x02 },
++};
++
++static struct wcove_bcu_platform_data wc_bcu_pdata = {
++	.config = {
++		{VWARNA_CFG_REG,	0xFF},
++		{VWARNB_CFG_REG,	0xFC},
++		{VCRIT_CFG_REG,		0xFD},
++		{ICCMAXVCC_CFG_REG,	0x06},
++		{ICCMAXVNN_CFG_REG,	0x06},
++		{ICCMAXVGG_CFG_REG,	0x06},
++		{BCUDISB_BEH_REG,	0x01},
++		{BCUDISCRIT_BEH_REG,	0x01},
++		{BCUVSYS_DRP_BEH_REG,	0x00},
++		{MBCUIRQ_REG,		0x18},
++	},
++	.num_regs = MAX_BCUCFG_REGS,
++};
++
++static struct resource gpio_resources[] = {
++	{
++		.name	= "GPIO",
++		.start	= GPIO_IRQ,
++		.end	= GPIO_IRQ,
++		.flags	= IORESOURCE_IRQ,
++	},
++};
++
++static struct resource pmic_ccsm_resources[] = {
++	{
++		.start = PWRSRC_IRQ,
++		.end   = PWRSRC_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++	{
++		.start = BATZC_IRQ,
++		.end   = BATZC_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++	{
++		.start = CTYPE_IRQ,
++		.end   = CTYPE_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource adc_resources[] = {
++	{
++		.name  = "ADC",
++		.start = ADC_IRQ,
++		.end   = ADC_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource charger_resources[] = {
++	{
++		.name  = "CHARGER",
++		.start = CHGR_IRQ,
++		.end   = CHGR_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource pmic_i2c_resources[] = {
++	{
++		.name  = "PMIC_I2C",
++		.start = PMICI2C_IRQ,
++		.end   = PMICI2C_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource thermal_resources[] = {
++	{
++		.start = THRM0_IRQ,
++		.end   = THRM0_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++	{
++		.start = THRM1_IRQ,
++		.end   = THRM1_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++	{
++		.start = THRM3_IRQ,
++		.end   = THRM3_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++	{
++		.start = BATALRT_IRQ,
++		.end   = BATALRT_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct resource bcu_resources[] = {
++	{
++		.name  = "BCU",
++		.start = BCU_IRQ,
++		.end   = BCU_IRQ,
++		.flags = IORESOURCE_IRQ,
++	},
++};
++
++static struct mfd_cell whiskey_cove_dev[] = {
++	{
++		.name = "wcove_gpadc",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(adc_resources),
++		.resources = adc_resources,
++	},
++	{
++		.name = "whiskey_cove_thermal",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(thermal_resources),
++		.resources = thermal_resources,
++	},
++	{
++		.name = "wcove_ccsm",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(pmic_ccsm_resources),
++		.resources = pmic_ccsm_resources,
++	},
++	{
++		.name = "wcove_pmic_i2c",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(pmic_i2c_resources),
++		.resources = pmic_i2c_resources,
++	},
++	{
++		.name = "ext-charger",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(charger_resources),
++		.resources = charger_resources,
++	},
++	{
++		.name = "wcove_bcu",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(bcu_resources),
++		.resources = bcu_resources,
++	},
++	{
++		.name = "whiskey_cove_gpio",
++		.id = 0,
++		.num_resources = ARRAY_SIZE(gpio_resources),
++		.resources = gpio_resources,
++	},
++	{
++		.name = "wcove_regulator",
++		.id = WCOVE_ID_V3P3SD + 1,
++		.num_resources = 0,
++		.resources = NULL,
++	},
++	{
++		.name = "wcove_regulator",
++		.id = WCOVE_ID_VSDIO + 1,
++		.num_resources = 0,
++		.resources = NULL,
++	},
++	{
++		.name = "wcove_regulator",
++		.id = WCOVE_ID_V1P2A + 1,
++		.num_resources = 0,
++		.resources = NULL,
++	},
++	{
++		.name = "wcove_regulator",
++		.id = WCOVE_ID_V1P8SX + 1,
++		.num_resources = 0,
++		.resources = NULL,
++	},
++	{
++		.name = "wcove_regulator",
++		.id = WCOVE_ID_V2P8SX + 1,
++		.num_resources = 0,
++		.resources = NULL,
++	},
++	{
++		.name = "wcove_regulator",
++		.id = WCOVE_ID_VPROG4B + 1,
++		.num_resources = 0,
++		.resources = NULL,
++	},
++	{
++		.name = "whiskey_cove_region",
++	},
++	{NULL, },
++};
++
++struct intel_pmic_irqregmap whiskey_cove_irqregmap[] = {
++	{
++		{MIRQLVL1, PWRSRC_LVL1, 1, 0},
++		{IRQLVL1, PWRSRC_LVL1, 1, 0},
++		INTEL_PMIC_REG_NULL,
++	},
++	{
++		{MIRQLVL1, THRM_LVL1, 1, 0},
++		{IRQLVL1, THRM_LVL1, 1, 0},
++		INTEL_PMIC_REG_NULL,
++	},
++	{
++		{MIRQLVL1, BCU_IRQ, 1, 0},
++		{BCUIRQ, 0, 0x1F, INTEL_PMIC_REG_W1C},
++		{BCUIRQ, 0, 0x1F, INTEL_PMIC_REG_W1C},
++	},
++	{
++		{MIRQLVL1, ADC_IRQ, 1, 0},
++		{IRQLVL1, ADC_IRQ, 1, 0},
++		INTEL_PMIC_REG_NULL,
++	},
++	{
++		{MIRQLVL1, CHGR_LVL1, 1, 0},
++		{IRQLVL1, CHGR_LVL1, 1, 0},
++		INTEL_PMIC_REG_NULL,
++	},
++	{
++		{MIRQLVL1, GPIO_IRQ, 1, 0},
++		{IRQLVL1, GPIO_IRQ, 1, 0},
++		INTEL_PMIC_REG_NULL,
++	},
++	{
++		INTEL_PMIC_REG_NULL,
++		INTEL_PMIC_REG_NULL,
++		INTEL_PMIC_REG_NULL,
++	},
++	{
++		{MIRQLVL1, CRIT_IRQ, 1, 0},
++		{IRQLVL1, CRIT_IRQ, 1, INTEL_PMIC_REG_W1C},
++		{CRITIRQ, 0, 0x03, INTEL_PMIC_REG_W1C}
++	},
++	{
++		{MIRQLVL1, 0, 0x1, 0},
++		{PWRSRCIRQ, 0, 0x1F, INTEL_PMIC_REG_W1C},
++		{PWRSRCIRQ, 0, 0x1F, INTEL_PMIC_REG_W1C},
++	},
++	{ /* THERM1 IRQ */
++		{MIRQLVL1, 1, 0x1, 0},
++		{THRM1IRQ, 0, 0xF, INTEL_PMIC_REG_W1C},
++		{THRM1IRQ, 0, 0xF, INTEL_PMIC_REG_W1C},
++	},
++	{ /* THERM2 */
++		{MIRQLVL1, 1, 0x1, 0},
++		{THRM2IRQ, 0, 0xC3, INTEL_PMIC_REG_W1C},
++		{THRM2IRQ, 0, 0xC3, INTEL_PMIC_REG_W1C},
++	},
++	{ /* BATZONE CHANGED */
++		{MIRQLVL1, 1, 0x1, 0},
++		{THRM1IRQ, 7, 1, INTEL_PMIC_REG_W1C},
++		{THRM1IRQ, 7, 1, INTEL_PMIC_REG_W1C},
++	},
++	{ /* Ext. Chrgr */
++		{MCHGRIRQ, 0, 0x1, 0},
++		{CHGRIRQ, 0, 1, INTEL_PMIC_REG_W1C},
++		{CHGRIRQ, 0, 1, INTEL_PMIC_REG_W1C},
++	},
++	{ /* THERM0 IRQ */
++		{MIRQLVL1, 1, 0x1, 0},
++		{THRM0IRQ, 0, 0xFF, INTEL_PMIC_REG_W1C},
++		{THRM0IRQ, 0, 0xFF, INTEL_PMIC_REG_W1C},
++	},
++	{ /* External I2C Transaction */
++		{MIRQLVL1, 4, 0x1, 0},
++		{CHGRIRQ, 1, 7, INTEL_PMIC_REG_W1C},
++		{CHGRIRQ, 1, 7, INTEL_PMIC_REG_W1C},
++	},
++	{ /* THERM3 */
++		{MIRQLVL1, 1, 0x1, 0},
++		{THRM3IRQ, 0, 0xF0, INTEL_PMIC_REG_W1C},
++		{THRM3IRQ, 0, 0xF0, INTEL_PMIC_REG_W1C},
++	},
++	{ /* CTYP */
++		{MIRQLVL1, 4, 0x1, 0},
++		{CHGRIRQ, 4, 1, INTEL_PMIC_REG_W1C},
++		{CHGRIRQ, 4, 1, INTEL_PMIC_REG_W1C},
++	},
++};
++
++static struct trip_config_map str0_trip_config[] = {
++	{
++		.irq_reg = THRM0IRQ,
++		.irq_mask = 0x01,
++		.irq_en = MTHRMIRQ0,
++		.irq_en_mask = 0x01,
++		.evt_stat = STHRMIRQ0,
++		.evt_mask = 0x01,
++		.trip_num = 0
++	},
++	{
++		.irq_reg = THRM0IRQ,
++		.irq_mask = 0x10,
++		.irq_en = MTHRMIRQ0,
++		.irq_en_mask = 0x10,
++		.evt_stat = STHRMIRQ0,
++		.evt_mask = 0x10,
++		.trip_num = 1
++	}
++};
++
++static struct trip_config_map str1_trip_config[] = {
++	{
++		.irq_reg = THRM0IRQ,
++		.irq_mask = 0x02,
++		.irq_en = MTHRMIRQ0,
++		.irq_en_mask = 0x02,
++		.evt_stat = STHRMIRQ0,
++		.evt_mask = 0x02,
++		.trip_num = 0
++	},
++	{
++		.irq_reg = THRM0IRQ,
++		.irq_mask = 0x20,
++		.irq_en = MTHRMIRQ0,
++		.irq_en_mask = 0x20,
++		.evt_stat = STHRMIRQ0,
++		.evt_mask = 0x20,
++		.trip_num = 1
++	},
++};
++
++static struct trip_config_map str2_trip_config[] = {
++	{
++		.irq_reg = THRM0IRQ,
++		.irq_mask = 0x04,
++		.irq_en = MTHRMIRQ0,
++		.irq_en_mask = 0x04,
++		.evt_stat = STHRMIRQ0,
++		.evt_mask = 0x04,
++		.trip_num = 0
++	},
++	{
++		.irq_reg = THRM0IRQ,
++		.irq_mask = 0x40,
++		.irq_en = MTHRMIRQ0,
++		.irq_en_mask = 0x40,
++		.evt_stat = STHRMIRQ0,
++		.evt_mask = 0x40,
++		.trip_num = 1
++	},
++};
++
++static struct trip_config_map str3_trip_config[] = {
++	{
++		.irq_reg = THRM2IRQ,
++		.irq_mask = 0x01,
++		.irq_en = MTHRMIRQ2,
++		.irq_en_mask = 0x01,
++		.evt_stat = STHRMIRQ2,
++		.evt_mask = 0x10,
++		.trip_num = 1
++	},
++};
++
++static struct thermal_irq_map wc_thermal_irq_map[] = {
++	{
++		.handle = "STR0",
++		.trip_config = str0_trip_config,
++		.num_trips = ARRAY_SIZE(str0_trip_config),
++	},
++	{
++		.handle = "STR1",
++		.trip_config = str1_trip_config,
++		.num_trips = ARRAY_SIZE(str1_trip_config),
++	},
++	{
++		.handle = "STR2",
++		.trip_config = str2_trip_config,
++		.num_trips = ARRAY_SIZE(str2_trip_config),
++	},
++	{
++		.handle = "STR3",
++		.trip_config = str3_trip_config,
++		.num_trips = ARRAY_SIZE(str3_trip_config),
++	},
++};
++
++static struct pmic_gpio_data whiskey_cove_gpio_data = {
++	.type = WHISKEY_COVE,
++	.num_gpio = 10,
++	.num_vgpio = 0x5e,
++};
++
++static struct pmic_thermal_data whiskey_cove_thermal_data = {
++	.maps = wc_thermal_irq_map,
++	.num_maps = ARRAY_SIZE(wc_thermal_irq_map),
++};
++
++static void wc_set_thermal_pdata(void)
++{
++	intel_soc_pmic_set_pdata("whiskey_cove_thermal",
++				(void *)&whiskey_cove_thermal_data,
++				sizeof(whiskey_cove_thermal_data), 0);
++}
++
++static struct regulator_consumer_supply v1p2a_consumer[] = {
++	REGULATOR_SUPPLY("v1p2a", "INT3477:00"),
++};
++
++static struct regulator_consumer_supply v1p8sx_consumer[] = {
++	REGULATOR_SUPPLY("v1p8sx", "INT33BE:00"),
++	REGULATOR_SUPPLY("v1p8sx", "INT33FB:00"),
++};
++
++static struct regulator_consumer_supply v2p8sx_consumer[] = {
++	REGULATOR_SUPPLY("v2p8sx", "INT33BE:00"),
++	REGULATOR_SUPPLY("v2p8sx", "INT33FB:00"),
++};
++
++static struct regulator_consumer_supply vprog4b_consumer[] = {
++	REGULATOR_SUPPLY("v2p8sx", "INT3477:00"),
++};
++
++/* v1p2a regulator */
++static struct regulator_init_data v1p2a_data = {
++	.constraints = {
++		.min_uV = 1178000,
++		.max_uV = 1277000,
++		.valid_ops_mask		= REGULATOR_CHANGE_VOLTAGE |
++				REGULATOR_CHANGE_STATUS,
++		.valid_modes_mask	= REGULATOR_MODE_NORMAL,
++	},
++	.num_consumer_supplies	= ARRAY_SIZE(v1p8sx_consumer),
++	.consumer_supplies	= v1p8sx_consumer,
++};
++
++/* v1p8sx regulator */
++static struct regulator_init_data v1p8sx_data = {
++	.constraints = {
++		.min_uV = 1620000,
++		.max_uV = 1980000,
++		.valid_ops_mask		= REGULATOR_CHANGE_VOLTAGE |
++				REGULATOR_CHANGE_STATUS,
++		.valid_modes_mask	= REGULATOR_MODE_NORMAL,
++	},
++	.num_consumer_supplies	= ARRAY_SIZE(v1p2a_consumer),
++	.consumer_supplies	= v1p2a_consumer,
++};
++
++/* v2p8sx regulator */
++static struct regulator_init_data v2p8sx_data = {
++	.constraints = {
++		.min_uV			= 2565000,
++		.max_uV			= 3300000,
++		.valid_ops_mask		= REGULATOR_CHANGE_VOLTAGE |
++					REGULATOR_CHANGE_STATUS,
++		.valid_modes_mask	= REGULATOR_MODE_NORMAL,
++	},
++	.num_consumer_supplies	= ARRAY_SIZE(v2p8sx_consumer),
++	.consumer_supplies	= v2p8sx_consumer,
++};
++
++/* vprog4b regulator */
++static struct regulator_init_data vprog4b_data = {
++	.constraints = {
++		.min_uV			= 800000,
++		.max_uV			= 3300000,
++		.valid_ops_mask		= REGULATOR_CHANGE_VOLTAGE |
++					REGULATOR_CHANGE_STATUS,
++		.valid_modes_mask	= REGULATOR_MODE_NORMAL,
++	},
++	.num_consumer_supplies	= ARRAY_SIZE(vprog4b_consumer),
++	.consumer_supplies	= vprog4b_consumer,
++};
++
++/*************************************************************
++*
++* WCOVE Camera related regulator
++*
++*************************************************************/
++static struct regulator_init_data wcove_v1p2a_data;
++static struct regulator_init_data wcove_v1p8sx_data;
++static struct regulator_init_data wcove_v2p8sx_data;
++static struct regulator_init_data wcove_vprog4b_data;
++
++static struct wcove_regulator_info wcove_v1p2a_info = {
++	.init_data = &wcove_v1p2a_data,
++};
++
++static struct wcove_regulator_info wcove_v1p8sx_info = {
++	.init_data = &wcove_v1p8sx_data,
++};
++
++static struct wcove_regulator_info wcove_v2p8sx_info = {
++	.init_data = &wcove_v2p8sx_data,
++};
++
++static struct wcove_regulator_info wcove_vprog4b_info = {
++	.init_data = &wcove_vprog4b_data,
++};
++
++static void wc_set_v1p2_pdata(void)
++{
++	memcpy((void *)&wcove_v1p2a_data, (void *)&v1p2a_data,
++			sizeof(struct regulator_init_data));
++
++	intel_soc_pmic_set_pdata("wcove_regulator", &wcove_v1p2a_info,
++		sizeof(struct wcove_regulator_info), WCOVE_ID_V1P2A + 1);
++
++}
++
++static void wc_set_v1p8_pdata(void)
++{
++	memcpy((void *)&wcove_v1p8sx_data, (void *)&v1p8sx_data,
++			sizeof(struct regulator_init_data));
++
++	intel_soc_pmic_set_pdata("wcove_regulator", &wcove_v1p8sx_info,
++		sizeof(struct wcove_regulator_info), WCOVE_ID_V1P8SX + 1);
++
++}
++
++static void wc_set_v2p8_pdata(void)
++{
++	memcpy((void *)&wcove_v2p8sx_data, (void *)&v2p8sx_data,
++			sizeof(struct regulator_init_data));
++
++	/* register camera regulator for whiskey cove PMIC */
++	intel_soc_pmic_set_pdata("wcove_regulator", &wcove_v2p8sx_info,
++		sizeof(struct wcove_regulator_info), WCOVE_ID_V2P8SX + 1);
++}
++
++static void wc_set_vprog4b_pdata(void)
++{
++	memcpy((void *)&wcove_vprog4b_data, (void *)&vprog4b_data,
++			sizeof(struct regulator_init_data));
++
++	/* register camera regulator for whiskey cove PMIC */
++	intel_soc_pmic_set_pdata("wcove_regulator", &wcove_vprog4b_info,
++		sizeof(struct wcove_regulator_info), WCOVE_ID_VPROG4B + 1);
++}
++
++
++static void wc_set_gpio_pdata(void)
++{
++	intel_soc_pmic_set_pdata("whiskey_cove_gpio",
++				(void *)&whiskey_cove_gpio_data,
++				sizeof(whiskey_cove_gpio_data), 0);
++}
++
++static void wc_set_adc_pdata(void)
++{
++	static struct intel_wcove_gpadc_platform_data wc_adc_pdata;
++
++	wc_adc_pdata.channel_num = GPADC_NUM_CHANNELS;
++	wc_adc_pdata.intr_mask = MUSBID | MPEAK | MBATTEMP
++		| MSYSTEMP | MBATT | MVIBATT | MGPMEAS | MCCTICK;
++	wc_adc_pdata.gpadc_iio_maps = wc_iio_maps;
++	wc_adc_pdata.gpadc_regmaps = whiskeycove_gpadc_regmaps;
++	wc_adc_pdata.gpadc_regs = &whiskeycove_gpadc_regs;
++	wc_adc_pdata.gpadc_channels = wc_adc_channels;
++	wc_adc_pdata.thrmmon_val = 0x1B;
++	wc_adc_pdata.battthermmon_val = 0x7B;
++	wc_adc_pdata.vbatmon_val = 0x1B;
++	wc_adc_pdata.gpmon_val = 0x00;
++
++	intel_soc_pmic_set_pdata("wcove_gpadc", (void *)&wc_adc_pdata,
++			sizeof(wc_adc_pdata), 0);
++}
++
++static acpi_handle pmic_handle(void)
++{
++	return ACPI_HANDLE(intel_soc_pmic_dev());
++}
++
++static int acpi_get_lpat_table(int **lpat)
++{
++	struct acpi_buffer buffer = { ACPI_ALLOCATE_BUFFER, NULL };
++	union acpi_object *obj_p, *obj_e;
++	int i, ret = 0;
++	acpi_status status;
++
++	if (!acpi_has_method(pmic_handle(), "LPAT"))
++		return -ENODEV;
++
++	status = acpi_evaluate_object(pmic_handle(), "LPAT", NULL, &buffer);
++	if (ACPI_FAILURE(status)) {
++		dev_err(intel_soc_pmic_dev(), "evaluate LPAT failed\n");
++		return -EINVAL;
++	}
++	obj_p = (union acpi_object *)buffer.pointer;
++	if (!obj_p || (obj_p->type != ACPI_TYPE_PACKAGE) ||
++	    (obj_p->package.count % 2) || (obj_p->package.count < 4)) {
++		dev_err(intel_soc_pmic_dev(), "Invalid LPAT data\n");
++		ret = -ENODEV;
++		goto err;
++	}
++
++	*lpat = devm_kmalloc(intel_soc_pmic_dev(),
++			    sizeof(**lpat) * obj_p->package.count, GFP_KERNEL);
++	if (!*lpat) {
++		dev_err(intel_soc_pmic_dev(), "No mem for lpat\n");
++		ret = -ENOMEM;
++		goto err;
++	}
++
++	for (i = 0; i < obj_p->package.count; i++) {
++		obj_e = &obj_p->package.elements[i];
++		if (obj_e->type != ACPI_TYPE_INTEGER) {
++			dev_err(intel_soc_pmic_dev(), "LPAT invalid data\n");
++			ret = -EINVAL;
++			goto err;
++		}
++		(*lpat)[i] = obj_e->integer.value;
++	}
++
++	ret = i;
++
++err:
++	kfree(buffer.pointer);
++	return ret;
++}
++
++static bool is_usb_compliant_charging(void)
++{
++	/* Empty */
++	return 0;
++}
++
++static void wcove_set_ccsm_config(void)
++{
++	static struct intel_pmic_ccsm_platform_data pdata;
++	int *lpat;
++	int adc_tbl_cnt;
++
++	pdata.intmap = wc_intmap;
++	pdata.intmap_size = ARRAY_SIZE(wc_intmap);
++	pdata.reg_map = &pmic_wcove_regmap;
++
++	adc_tbl_cnt = acpi_get_lpat_table(&lpat);
++
++	if (adc_tbl_cnt > 0) {
++		pdata.max_tbl_row_cnt = adc_tbl_cnt;
++		pdata.adc_tbl = (struct temp_lookup *)lpat;
++	}
++
++	intel_soc_pmic_set_pdata("wcove_ccsm", &pdata,
++		sizeof(pdata), 0);
++
++	pdata.usb_compliance = is_usb_compliant_charging();
++}
++
++static void wcove_set_bcu_pdata(void)
++{
++	intel_soc_pmic_set_pdata("wcove_bcu", (void *)&wc_bcu_pdata,
++			sizeof(struct wcove_bcu_platform_data), 0);
++}
++
++static int whiskey_cove_init(void)
++{
++	pr_info("Whiskey Cove: ID 0x%02X, VERSION 0x%02X\n",
++		intel_soc_pmic_readb(CHIPID), intel_soc_pmic_readb(CHIPVER));
++
++	wcove_set_ccsm_config();
++	wcove_set_bcu_pdata();
++	wc_set_adc_pdata();
++	wc_set_gpio_pdata();
++	wc_set_v1p2_pdata();
++	wc_set_v1p8_pdata();
++	wc_set_v2p8_pdata();
++	wc_set_vprog4b_pdata();
++	wc_set_thermal_pdata();
++	wcove_init_done = true;
++
++	return 0;
++}
++
++struct intel_soc_pmic whiskey_cove_pmic = {
++	.label		= "whiskey cove",
++	.irq_flags	= IRQF_TRIGGER_HIGH | IRQF_ONESHOT,
++	.init		= whiskey_cove_init,
++	.cell_dev	= whiskey_cove_dev,
++	.irq_regmap	= whiskey_cove_irqregmap,
++	.irq_num	= sizeof(whiskey_cove_irqregmap)/
++				sizeof(whiskey_cove_irqregmap[0]),
++};
++
++MODULE_LICENSE("GPL v2");
++MODULE_AUTHOR("Yang Bin <bin.yang@intel.com");
++
+diff --git a/drivers/power/Makefile b/drivers/power/Makefile
+index b656638..e5cdc88 100644
+--- a/drivers/power/Makefile
++++ b/drivers/power/Makefile
+@@ -70,5 +70,6 @@ obj-$(CONFIG_CHARGER_SMB347)	+= smb347-charger.o
+ obj-$(CONFIG_CHARGER_TPS65090)	+= tps65090-charger.o
+ obj-$(CONFIG_CHARGER_TPS65217)	+= tps65217_charger.o
+ obj-$(CONFIG_POWER_RESET)	+= reset/
++obj-$(CONFIG_INTEL_SOC_PMIC)	+= intel_pmic_ccsm.o
+ obj-$(CONFIG_AXP288_FUEL_GAUGE) += axp288_fuel_gauge.o
+ obj-$(CONFIG_AXP288_CHARGER)	+= axp288_charger.o
+diff --git a/drivers/power/intel_pmic_ccsm.c b/drivers/power/intel_pmic_ccsm.c
+new file mode 100644
+index 0000000..336a474
+--- /dev/null
++++ b/drivers/power/intel_pmic_ccsm.c
+@@ -0,0 +1,1010 @@
++/*
++ * pmic_ccsm.c - Intel MID PMIC Charger Driver
++ *
++ * Copyright (C) 2011 Intel Corporation
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * Author: Jenny TC <jenny.tc@intel.com>
++ * Author: Yegnesh Iyer <yegnesh.s.iyer@intel.com>
++ */
++#include <linux/module.h>
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/acpi.h>
++#include <linux/err.h>
++#include <linux/interrupt.h>
++#include <linux/workqueue.h>
++#include <linux/seq_file.h>
++#include <linux/debugfs.h>
++#include <linux/slab.h>
++#include <linux/device.h>
++#include <linux/platform_device.h>
++#include <linux/usb/otg.h>
++#include <linux/power_supply.h>
++#include <linux/thermal.h>
++#include <linux/iio/consumer.h>
++#include <linux/notifier.h>
++#include <linux/mfd/intel_soc_pmic.h>
++#include <linux/extcon.h>
++#include "intel_pmic_ccsm.h"
++
++/* Macros */
++#define DRIVER_NAME "pmic_ccsm"
++#define ADC_TO_TEMP 1
++#define TEMP_TO_ADC 0
++#define USB_WAKE_LOCK_TIMEOUT	(5 * HZ)
++
++#define USBINPUTICC100VAL	100
++#define CDP_INPUT_CURRENT_LIMIT 1500
++#define HIGH_POWER_CHRG_CURRENT 2000
++#define LOW_POWER_CHRG_CURRENT 500
++
++#define INTERNAL_PHY_SUPPORTED(model) \
++	((model == INTEL_PMIC_SCOVE) || (model == INTEL_PMIC_WCOVE))
++
++#define NEED_ZONE_SPLIT(bprof)\
++	 ((bprof->temp_mon_ranges < MIN_BATT_PROF))
++#define NEXT_ZONE_OFFSET 2
++#define BATTEMP_CHANNEL "BATTEMP0"
++#define VBUS_CTRL_CDEV_NAME	"vbus_control"
++
++#define RID_A_MIN 11150
++#define RID_A_MAX 13640
++#define RID_B_MAX 7480
++#define RID_B_MIN 6120
++#define RID_C_MAX 4015
++#define RID_C_MIN 3285
++
++#define IS_RID_A(rid) (rid > RID_A_MIN && rid < RID_A_MAX)
++#define IS_RID_B(rid) (rid > RID_B_MIN && rid < RID_B_MAX)
++#define IS_RID_C(rid) (rid > RID_C_MIN && rid < RID_C_MAX)
++
++#define KELVIN_OFFSET	27315
++
++/* Type definitions */
++static int intel_pmic_handle_otgmode(bool enable);
++
++/* Extern definitions */
++
++/* Global declarations */
++static DEFINE_MUTEX(pmic_lock);
++static struct pmic_chrgr_drv_context chc;
++
++u16 pmic_inlmt[][2] = {
++	{ 100, CHGRCTRL1_FUSB_INLMT_100},
++	{ 150, CHGRCTRL1_FUSB_INLMT_150},
++	{ 500, CHGRCTRL1_FUSB_INLMT_500},
++	{ 900, CHGRCTRL1_FUSB_INLMT_900},
++	{ 1500, CHGRCTRL1_FUSB_INLMT_1500},
++	{ 2000, CHGRCTRL1_FUSB_INLMT_1500},
++	{ 2500, CHGRCTRL1_FUSB_INLMT_1500},
++};
++
++enum pmic_vbus_states {
++	VBUS_ENABLE,
++	VBUS_DISABLE,
++	MAX_VBUSCTRL_STATES,
++};
++
++static int pmic_read_reg(u16 addr, u8 *val)
++{
++	int ret;
++
++	ret = intel_soc_pmic_readb(addr);
++	if (ret == -EIO) {
++		dev_err(chc.dev, "%s:Error(%d): addr:data 0x%.4x\n",
++				__func__, ret, addr);
++		return ret;
++	}
++	*val = ret;
++	return 0;
++}
++
++static int pmic_write_reg(u16 addr, u8 val)
++{
++	int ret;
++
++	ret = intel_soc_pmic_writeb(addr, val);
++	if (ret)
++		dev_err(chc.dev, "%s:Error(%d): addr:data 0x%.4x:0x%.4x\n",
++				__func__, ret, addr, val);
++	return ret;
++}
++
++static int __pmic_write_tt(u8 addr, u8 data)
++{
++	int ret;
++
++	/* If TT is locked return true */
++	if (chc.tt_lock)
++		return 0;
++
++	ret = pmic_write_reg(chc.reg_map->pmic_chrttaddr, addr);
++	if (!ret)
++		ret = pmic_write_reg(chc.reg_map->pmic_chrttdata, data);
++	return ret;
++}
++
++static inline int pmic_write_tt(u8 addr, u8 data)
++{
++	int ret;
++
++	mutex_lock(&pmic_lock);
++	ret = __pmic_write_tt(addr, data);
++	mutex_unlock(&pmic_lock);
++	return ret;
++}
++
++static int __pmic_read_tt(u8 addr, u8 *data)
++{
++	int ret;
++
++	ret = pmic_write_reg(chc.reg_map->pmic_chrttaddr, addr);
++	if (ret)
++		return ret;
++
++	/* Delay the TT read by 2ms to ensure that the data is populated
++	 * in data register
++	 */
++	usleep_range(2000, 3000);
++
++	return pmic_read_reg(chc.reg_map->pmic_chrttdata, data);
++}
++
++static inline int pmic_read_tt(u8 addr, u8 *data)
++{
++	int ret;
++
++	mutex_lock(&pmic_lock);
++	ret = __pmic_read_tt(addr, data);
++	mutex_unlock(&pmic_lock);
++
++	return ret;
++}
++
++void intel_pmic_ccsm_dump_regs(void)
++{
++	u8 data;
++	int ret, i;
++	u16 *reg;
++
++	dev_dbg(chc.dev, "PMIC Register dump\n");
++	dev_dbg(chc.dev, "====================\n");
++
++	reg = (u16 *)chc.reg_map;
++
++	for (i = 0; i < chc.reg_cnt; i++, reg++) {
++
++		ret = pmic_read_reg(*reg, &data);
++		if (!ret)
++			dev_dbg(chc.dev, "%s=0x%x\n", pmic_regs_name[i], data);
++	}
++	dev_dbg(chc.dev, "====================\n");
++}
++
++static int pmic_ccsm_suspend(struct device *dev)
++{
++	int ret;
++
++	/* Disable CHGDIS pin */
++	ret = intel_soc_pmic_update(chc.reg_map->pmic_chgdisctrl,
++			CHGDISFN_DIS_CCSM_VAL, CHGDISFN_CCSM_MASK);
++	if (ret)
++		dev_warn(chc.dev, "Error writing to register: %x\n",
++			chc.reg_map->pmic_chgdisctrl);
++
++	return ret;
++}
++
++static int pmic_ccsm_resume(struct device *dev)
++{
++	int ret;
++
++	/* Enable CHGDIS pin */
++	ret = intel_soc_pmic_update(chc.reg_map->pmic_chgdisctrl,
++			CHGDISFN_EN_CCSM_VAL, CHGDISFN_CCSM_MASK);
++	if (ret)
++		dev_warn(chc.dev, "Error writing to register: %x\n",
++			chc.reg_map->pmic_chgdisctrl);
++
++	return ret;
++}
++
++const struct dev_pm_ops pmic_ccsm_pm = {
++	.suspend = pmic_ccsm_suspend,
++	.resume = pmic_ccsm_resume,
++};
++
++void acpi_pmic_enable_vbus(bool enable)
++{
++#if CONFIG_ACPI
++	acpi_status status;
++	acpi_handle handle = ACPI_HANDLE(intel_soc_pmic_dev());
++	struct acpi_object_list args;
++	union acpi_object object;
++
++	if (!handle) {
++		dev_err(intel_soc_pmic_dev(), "error null hanlder\n");
++		return;
++	}
++
++	args.count = 1;
++	args.pointer = &object;
++	object.type = ACPI_TYPE_INTEGER;
++	object.integer.value = enable ? 1 : 0;
++
++	status = acpi_evaluate_object(handle, "VBUS", &args, NULL);
++	if (ACPI_FAILURE(status))
++		dev_err(intel_soc_pmic_dev(),
++			"ACPI method call fail:%x\n", status);
++#endif
++}
++
++int intel_pmic_enable_vbus(bool enable)
++{
++	int ret = 0;
++
++	if (enable)
++		ret = intel_soc_pmic_update(chc.reg_map->pmic_chgrctrl0,
++				WDT_NOKICK_ENABLE, CHGRCTRL0_WDT_NOKICK_MASK);
++	else
++		ret = intel_soc_pmic_update(chc.reg_map->pmic_chgrctrl0,
++				WDT_NOKICK_DISABLE, CHGRCTRL0_WDT_NOKICK_MASK);
++
++	acpi_pmic_enable_vbus(enable);
++
++	/* If access is blocked return success to avoid additional
++	*  error handling at client side
++	*/
++	if (ret == -EACCES) {
++		dev_warn(chc.dev, "IPC blocked due to unsigned kernel/invalid battery\n");
++		ret = 0;
++	}
++
++	return ret;
++}
++
++static int intel_pmic_handle_otgmode(bool enable)
++{
++	int ret = 0;
++
++	if (chc.pmic_model == INTEL_PMIC_BCOVE)
++		return 0;
++
++	if (enable)
++		ret = intel_soc_pmic_update(chc.reg_map->pmic_chgrctrl1,
++				CHGRCTRL1_OTGMODE_MASK,
++				CHGRCTRL1_OTGMODE_MASK);
++	else
++		ret = intel_soc_pmic_update(chc.reg_map->pmic_chgrctrl1,
++				0x0, CHGRCTRL1_OTGMODE_MASK);
++
++	/* If access is blocked return success to avoid additional
++	*  error handling at client side
++	*/
++	if (ret == -EACCES) {
++		dev_warn(chc.dev, "IPC blocked due to unsigned kernel/invalid battery\n");
++		ret = 0;
++	}
++
++	return ret;
++}
++
++static int pmic_get_usbid(void)
++{
++	int ret;
++	struct iio_channel *indio_chan;
++	int rid, id = RID_UNKNOWN;
++	u8 val;
++
++	ret = pmic_read_reg(chc.reg_map->pmic_schgrirq1, &val);
++	if (ret)
++		return RID_UNKNOWN;
++
++	/* SCHGRIRQ1_REG SUSBIDDET bit definition:
++	 * 00 = RID_A/B/C ; 01 = RID_GND ; 10 = RID_FLOAT
++	 */
++	if ((val & SCHRGRIRQ1_SUSBIDGNDDET_MASK) == SHRT_FLT_DET)
++		return RID_FLOAT;
++	else if ((val & SCHRGRIRQ1_SUSBIDGNDDET_MASK) == SHRT_GND_DET)
++		return RID_GND;
++
++	indio_chan = iio_channel_get(NULL, "USBID");
++	if (IS_ERR_OR_NULL(indio_chan)) {
++		dev_err(chc.dev, "Failed to get IIO channel USBID\n");
++		return RID_UNKNOWN;
++	}
++
++	ret = iio_read_channel_raw(indio_chan, &rid);
++	if (ret) {
++		dev_err(chc.dev, "IIO channel read error for USBID\n");
++		goto err_exit;
++	}
++	dev_dbg(chc.dev, "%s: rid=%d\n", __func__, rid);
++	if (IS_RID_A(rid))
++		id = RID_A;
++	else if (IS_RID_B(rid))
++		id = RID_B;
++	else if (IS_RID_C(rid))
++		id = RID_C;
++
++err_exit:
++	iio_channel_release(indio_chan);
++	return id;
++}
++
++static int get_charger_type(void)
++{
++	int ret, i = 0;
++	u8 val;
++	int chgr_type, rid;
++
++	do {
++		ret = pmic_read_reg(chc.reg_map->pmic_usbsrcdetstat, &val);
++		if (ret)
++			return 0;
++		i++;
++		dev_dbg(chc.dev, "Read USBSRCDETSTATUS val: %x\n", val);
++
++		if ((val & USBSRCDET_SUSBHWDET_DETSUCC) ==
++				USBSRCDET_SUSBHWDET_DETSUCC)
++			break;
++		msleep(USBSRCDET_SLEEP_TIME);
++	} while (i < USBSRCDET_RETRY_CNT);
++
++	if ((val & USBSRCDET_SUSBHWDET_DETSUCC) !=
++			USBSRCDET_SUSBHWDET_DETSUCC) {
++		dev_err(chc.dev, "Charger detection unsuccessful after %dms\n",
++			i * USBSRCDET_SLEEP_TIME);
++		return 0;
++	}
++
++	chgr_type = (val & USBSRCDET_USBSRCRSLT_MASK) >> 2;
++	dev_dbg(chc.dev, "Charger type after detection complete: %d\n",
++			(val & USBSRCDET_USBSRCRSLT_MASK) >> 2);
++
++	switch (chgr_type) {
++	case PMIC_CHARGER_TYPE_SDP:
++	case PMIC_CHARGER_TYPE_FLOAT_DP_DN:
++		return POWER_SUPPLY_CHARGER_TYPE_USB_SDP;
++	case PMIC_CHARGER_TYPE_DCP:
++		return POWER_SUPPLY_CHARGER_TYPE_USB_DCP;
++	case PMIC_CHARGER_TYPE_CDP:
++		return POWER_SUPPLY_CHARGER_TYPE_USB_CDP;
++	case PMIC_CHARGER_TYPE_ACA:
++		rid = pmic_get_usbid();
++		if (rid == RID_A)
++			return POWER_SUPPLY_CHARGER_TYPE_ACA_DOCK;
++		/* As PMIC detected the charger as ACA, if RID detection
++		 * failed report type as ACA
++		 */
++		else
++			return POWER_SUPPLY_CHARGER_TYPE_USB_ACA;
++	case PMIC_CHARGER_TYPE_SE1:
++		return POWER_SUPPLY_CHARGER_TYPE_SE1;
++	case PMIC_CHARGER_TYPE_MHL:
++		return POWER_SUPPLY_CHARGER_TYPE_MHL;
++	default:
++		return POWER_SUPPLY_CHARGER_TYPE_NONE;
++	}
++}
++
++static void handle_internal_usbphy_notifications(int mask)
++{
++	struct power_supply_cable_props cap = {0};
++	int evt = USB_EVENT_NONE;
++
++	if (mask) {
++		cap.chrg_evt = POWER_SUPPLY_CHARGER_EVENT_CONNECT;
++		cap.chrg_type = get_charger_type();
++		chc.charger_type = cap.chrg_type;
++
++		if (cap.chrg_type == 0)
++			return;
++	} else {
++		cap.chrg_evt = POWER_SUPPLY_CHARGER_EVENT_DISCONNECT;
++		cap.chrg_type = chc.charger_type;
++	}
++
++	switch (cap.chrg_type) {
++	case POWER_SUPPLY_CHARGER_TYPE_USB_SDP:
++		if (cap.chrg_evt == POWER_SUPPLY_CHARGER_EVENT_CONNECT)
++			evt =  USB_EVENT_VBUS;
++		else
++			evt =  USB_EVENT_NONE;
++		if (chc.pdata->usb_compliance)
++			cap.ma = USBINPUTICC100VAL;
++		else
++			cap.ma = LOW_POWER_CHRG_CURRENT;
++		break;
++	case POWER_SUPPLY_CHARGER_TYPE_USB_CDP:
++		if (cap.chrg_evt == POWER_SUPPLY_CHARGER_EVENT_CONNECT)
++			evt =  USB_EVENT_VBUS;
++		else
++			evt =  USB_EVENT_NONE;
++		cap.ma = CDP_INPUT_CURRENT_LIMIT;
++		break;
++	case POWER_SUPPLY_CHARGER_TYPE_USB_DCP:
++	case POWER_SUPPLY_CHARGER_TYPE_SE1:
++	case POWER_SUPPLY_CHARGER_TYPE_USB_ACA:
++		cap.ma = HIGH_POWER_CHRG_CURRENT;
++		break;
++	case POWER_SUPPLY_CHARGER_TYPE_ACA_DOCK:
++	case POWER_SUPPLY_CHARGER_TYPE_ACA_A:
++		cap.ma = HIGH_POWER_CHRG_CURRENT;
++		if (cap.chrg_evt == POWER_SUPPLY_CHARGER_EVENT_CONNECT)
++			evt = USB_EVENT_ID;
++		else
++			evt = USB_EVENT_NONE;
++		break;
++	case POWER_SUPPLY_CHARGER_TYPE_AC:
++	case POWER_SUPPLY_CHARGER_TYPE_ACA_B:
++	case POWER_SUPPLY_CHARGER_TYPE_ACA_C:
++	case POWER_SUPPLY_CHARGER_TYPE_MHL:
++	case POWER_SUPPLY_CHARGER_TYPE_B_DEVICE:
++		cap.ma = HIGH_POWER_CHRG_CURRENT;
++		break;
++	case POWER_SUPPLY_CHARGER_TYPE_NONE:
++	default:
++		cap.ma = 0;
++	}
++
++	dev_dbg(chc.dev, "Notifying OTG ev:%d, evt:%d, chrg_type:%d, mA:%d\n",
++			evt, cap.chrg_evt, cap.chrg_type,
++			cap.ma);
++	if (cap.chrg_evt == POWER_SUPPLY_CHARGER_EVENT_DISCONNECT)
++		chc.charger_type = POWER_SUPPLY_CHARGER_TYPE_NONE;
++
++	/*
++	 * Open / Close D+/D- lines in USB detection switch
++	 * due to WC PMIC bug only for SDP/CDP.
++	 */
++	pmic_write_reg(chc.reg_map->pmic_usbphyctrl,
++			((evt == USB_EVENT_VBUS)
++				|| (evt == USB_EVENT_ID)) ? 1 : 0);
++
++	atomic_notifier_call_chain(&chc.otg->notifier,
++				USB_EVENT_CHARGER, &cap);
++	if (evt >= 0)
++		atomic_notifier_call_chain(&chc.otg->notifier, evt, NULL);
++}
++
++static void handle_pwrsrc_interrupt(u16 int_reg, u16 stat_reg)
++{
++	int mask;
++	u16 id_mask;
++	struct power_supply_cable_props dcin_cable;
++
++	id_mask = BIT_POS(PMIC_INT_USBIDFLTDET) |
++				 BIT_POS(PMIC_INT_USBIDGNDDET);
++
++	mutex_lock(&pmic_lock);
++	if (int_reg & id_mask) {
++		mask = (stat_reg & id_mask) == SHRT_GND_DET;
++		/* Close/Open D+/D- lines in USB detection switch
++		 * due to WC PMIC bug
++		 */
++		if (mask) {
++			dev_info(chc.dev,
++				"USB ID Detected. Notifying OTG driver\n");
++			pmic_write_reg(chc.reg_map->pmic_usbphyctrl, 0x1);
++			if (chc.vbus_state == VBUS_ENABLE) {
++				if (chc.otg->set_vbus)
++					chc.otg->set_vbus(chc.otg, true);
++				else
++					intel_pmic_enable_vbus(true);
++				atomic_notifier_call_chain(&chc.otg->notifier,
++						USB_EVENT_ID, &mask);
++			}
++		} else if ((int_reg & BIT_POS(PMIC_INT_USBIDFLTDET)) &&
++				chc.otg_mode_enabled) {
++			/* WA for OTG ID removal: PMIC interprets ID removal
++			 * as ID_FLOAT. Check for ID float and otg_mode enabled
++			 * to send ID disconnect.
++			 * In order to avoid ctyp detection flow, disable otg
++			 * mode during vbus turn off event
++			 */
++			dev_info(chc.dev,
++				"USB ID Removed. Notifying OTG driver\n");
++			if (chc.vbus_state == VBUS_ENABLE) {
++				if (chc.otg->set_vbus)
++					chc.otg->set_vbus(chc.otg, false);
++				else
++					intel_pmic_enable_vbus(false);
++				atomic_notifier_call_chain(&chc.otg->notifier,
++						USB_EVENT_NONE, NULL);
++			}
++			pmic_write_reg(chc.reg_map->pmic_usbphyctrl, 0x0);
++
++		}
++	}
++
++	if ((int_reg & BIT_POS(PMIC_INT_USBIDDET)) &&
++			(chc.vbus_state == VBUS_ENABLE)) {
++		mask = !!(stat_reg & BIT_POS(PMIC_INT_USBIDDET));
++		if (chc.otg->set_vbus)
++			chc.otg->set_vbus(chc.otg, true);
++		else
++			intel_pmic_enable_vbus(true);
++		atomic_notifier_call_chain(&chc.otg->notifier,
++				USB_EVENT_ID, &mask);
++	}
++	mutex_unlock(&pmic_lock);
++
++	if (int_reg & BIT_POS(PMIC_INT_VBUS)) {
++		int ret;
++
++		mask = !!(stat_reg & BIT_POS(PMIC_INT_VBUS));
++		if (mask) {
++			dev_info(chc.dev,
++				"USB VBUS Detected. Notifying OTG driver\n");
++			mutex_lock(&pmic_lock);
++			chc.otg_mode_enabled =
++				(stat_reg & id_mask) == SHRT_GND_DET;
++			mutex_unlock(&pmic_lock);
++		} else {
++			dev_info(chc.dev,
++				"USB VBUS Removed. Notifying OTG driver\n");
++		}
++		ret = intel_soc_pmic_readb(chc.reg_map->pmic_chgrctrl1);
++		dev_dbg(chc.dev, "chgrctrl = %x", ret);
++		if (ret & CHGRCTRL1_OTGMODE_MASK) {
++			mutex_lock(&pmic_lock);
++			chc.otg_mode_enabled = true;
++			mutex_unlock(&pmic_lock);
++		}
++
++		/* Avoid charger-detection flow in case of host-mode */
++		if (chc.is_internal_usb_phy && !chc.otg_mode_enabled)
++			handle_internal_usbphy_notifications(mask);
++		else if (!mask) {
++			mutex_lock(&pmic_lock);
++			chc.otg_mode_enabled =
++					(stat_reg & id_mask) == SHRT_GND_DET;
++			mutex_unlock(&pmic_lock);
++		}
++		mutex_lock(&pmic_lock);
++		intel_pmic_handle_otgmode(chc.otg_mode_enabled);
++		mutex_unlock(&pmic_lock);
++	}
++
++	if (int_reg & BIT_POS(PMIC_INT_DCIN)) {
++		mask = !!(stat_reg & BIT_POS(PMIC_INT_DCIN));
++		if (mask) {
++			if (!chc.vdcin_det) {
++				dev_info(chc.dev,
++				"VDCIN Detected. Notifying charger framework\n");
++				dcin_cable.chrg_evt =
++					POWER_SUPPLY_CHARGER_EVENT_CONNECT;
++				dcin_cable.chrg_type =
++				POWER_SUPPLY_CHARGER_TYPE_WIRELESS;
++				dcin_cable.ma = 900;
++				atomic_notifier_call_chain(
++					&power_supply_notifier,
++					PSY_CABLE_EVENT, &dcin_cable);
++				chc.vdcin_det = true;
++			}
++		} else {
++			if (chc.vdcin_det) {
++				dev_info(chc.dev,
++				"VDCIN Removed.Notifying charger framework\n");
++				dcin_cable.chrg_evt =
++					POWER_SUPPLY_CHARGER_EVENT_DISCONNECT;
++				dcin_cable.chrg_type =
++				POWER_SUPPLY_CHARGER_TYPE_WIRELESS;
++				dcin_cable.ma = 900;
++				atomic_notifier_call_chain(
++					&power_supply_notifier,
++				  PSY_CABLE_EVENT, &dcin_cable);
++				chc.vdcin_det = false;
++			}
++		}
++	}
++}
++
++static void pmic_event_worker(struct work_struct *work)
++{
++	struct pmic_event *evt, *tmp;
++
++	dev_dbg(chc.dev, "%s\n", __func__);
++
++	list_for_each_entry_safe(evt, tmp, &chc.evt_queue, node) {
++		list_del(&evt->node);
++
++	dev_dbg(chc.dev, "%s pwrsrc=%X, spwrsrc=%x battirq=%x sbattirq=%x miscirq=%x smiscirq=%x wake thread\n",
++			__func__, evt->pwrsrc_int,
++			evt->pwrsrc_int_stat, evt->battemp_int,
++			evt->battemp_int_stat, evt->misc_int,
++			evt->misc_int_stat);
++
++		if (evt->pwrsrc_int)
++			handle_pwrsrc_interrupt(evt->pwrsrc_int,
++						evt->pwrsrc_int_stat);
++		kfree(evt);
++	}
++}
++
++static irqreturn_t pmic_isr(int irq, void *data)
++{
++	return IRQ_WAKE_THREAD;
++}
++static irqreturn_t pmic_thread_handler(int id, void *data)
++{
++	int i, shift;
++	u16 *pmic_int, *pmic_int_stat, off;
++	u16 stat_reg = 0, int_reg = 0;
++	u8 ireg_val = 0, sreg_val = 0, val;
++	struct pmic_event *evt;
++
++	evt = kzalloc(sizeof(struct pmic_event), GFP_KERNEL);
++	if (!evt)
++		return IRQ_NONE;
++
++	pmic_int = &evt->pwrsrc_int;
++	pmic_int_stat = &evt->pwrsrc_int_stat;
++
++	for (i = 0; i < chc.intmap_size; ++i) {
++		off = chc.intmap[i].pmic_int / 16;
++
++		if (int_reg != chc.intmap[i].ireg) {
++			pmic_read_reg(chc.intmap[i].ireg, &ireg_val);
++			int_reg = chc.intmap[i].ireg;
++		}
++		val = ireg_val;
++		dev_dbg(chc.dev, "%s:%d ireg=%x val = %x\n", __func__, __LINE__,
++			chc.intmap[i].ireg, val);
++		val &= chc.intmap[i].mask;
++
++		shift = ffs(chc.intmap[i].mask) -
++				ffs(BIT_POS(chc.intmap[i].pmic_int));
++		if (shift < 0)
++			val <<= abs(shift);
++		else if (shift > 0)
++			val >>= abs(shift);
++
++		pmic_int[off] |= val;
++
++		dev_dbg(chc.dev, "%s:%d ireg=%x\n", __func__, __LINE__,
++				pmic_int[off]);
++
++		if (stat_reg != chc.intmap[i].sreg) {
++			pmic_read_reg(chc.intmap[i].sreg, &sreg_val);
++			stat_reg = chc.intmap[i].sreg;
++		}
++		val = sreg_val;
++		dev_dbg(chc.dev, "%s:%d sreg=%x\n",
++				__func__, __LINE__, chc.intmap[i].sreg);
++		val &= chc.intmap[i].mask;
++
++		if (shift < 0)
++			val <<= abs(shift);
++		else if (shift > 0)
++			val >>= abs(shift);
++
++		pmic_int_stat[off] |= val;
++		dev_dbg(chc.dev, "%s:%d stat=%x\n",
++			__func__, __LINE__, pmic_int_stat[off]);
++	}
++
++	INIT_LIST_HEAD(&evt->node);
++	list_add_tail(&evt->node, &chc.evt_queue);
++
++	dev_dbg(chc.dev, "%s pwrsrc=%X, spwrsrc=%x battirq=%x sbattirq=%x miscirq=%x smiscirq=%x wake thread\n",
++			__func__, evt->pwrsrc_int,
++			evt->pwrsrc_int_stat, evt->battemp_int,
++			evt->battemp_int_stat, evt->misc_int,
++			evt->misc_int_stat);
++
++	schedule_delayed_work(&chc.evt_work, msecs_to_jiffies(100));
++	return IRQ_HANDLED;
++}
++
++static int pmic_check_initial_events(void)
++{
++	int ret = 0, i, shift;
++	struct pmic_event *evt;
++	u8 val, sreg_val = 0;
++	u16 *pmic_int, *pmic_int_stat, off;
++	u16 stat_reg = 0;
++	struct extcon_dev *edev;
++
++	evt = kzalloc(sizeof(struct pmic_event), GFP_KERNEL);
++	if (!evt)
++		return -ENOMEM;
++
++	pmic_int = &evt->pwrsrc_int;
++	pmic_int_stat = &evt->pwrsrc_int_stat;
++
++	for (i = 0; i < chc.intmap_size; ++i) {
++		off = chc.intmap[i].pmic_int / 16;
++
++		if (stat_reg != chc.intmap[i].sreg) {
++			pmic_read_reg(chc.intmap[i].sreg, &sreg_val);
++			stat_reg = chc.intmap[i].sreg;
++		}
++
++		val = sreg_val;
++		dev_dbg(chc.dev, "%s:%d reg=%x val = %x\n", __func__, __LINE__,
++					chc.intmap[i].sreg, val);
++		val &= chc.intmap[i].mask;
++		dev_dbg(chc.dev, "%s:%d reg=%x val = %x\n", __func__, __LINE__,
++					chc.intmap[i].sreg, val);
++
++		shift = ffs(chc.intmap[i].mask) -
++				ffs(BIT_POS(chc.intmap[i].pmic_int));
++		if (shift < 0)
++			val <<= abs(shift);
++		else if (shift > 0)
++			val >>= abs(shift);
++		pmic_int[off] |= val;
++		pmic_int_stat[off] |= val;
++	}
++
++	INIT_LIST_HEAD(&evt->node);
++	list_add_tail(&evt->node, &chc.evt_queue);
++
++	edev = extcon_get_extcon_dev("usb-typec");
++
++	if (!edev)
++		dev_err(chc.dev, "No edev found");
++	else {
++		chc.cable_state = extcon_get_cable_state(edev, "USB-Host");
++		if (chc.cable_state)
++			schedule_work(&chc.extcon_work);
++	}
++
++	schedule_delayed_work(&chc.evt_work, 0);
++
++	return ret;
++}
++
++static int get_pmic_model(const char *name)
++{
++	if (!strncmp(name, "wcove_ccsm", strlen("wcove_ccsm")))
++		return INTEL_PMIC_WCOVE;
++	else if (!strncmp(name, "scove_ccsm", strlen("scove_ccsm")))
++		return INTEL_PMIC_SCOVE;
++	else if (!strncmp(name, "bcove_ccsm", strlen("bcove_ccsm")))
++		return INTEL_PMIC_BCOVE;
++
++	return INTEL_PMIC_UNKNOWN;
++}
++
++static void pmic_ccsm_extcon_host_work(struct work_struct *work)
++{
++	mutex_lock(&pmic_lock);
++	if (chc.cable_state) {
++		chc.otg_mode_enabled = chc.cable_state;
++		intel_pmic_handle_otgmode(chc.otg_mode_enabled);
++	}
++	pmic_write_reg(chc.reg_map->pmic_usbphyctrl, chc.cable_state);
++	mutex_unlock(&pmic_lock);
++}
++
++static int pmic_ccsm_usb_host_nb(struct notifier_block *nb,
++		unsigned long event, void *data)
++{
++	struct extcon_dev *dev = (struct extcon_dev *)data;
++
++	chc.cable_state = extcon_get_cable_state(dev, "USB-Host");
++	schedule_work(&chc.extcon_work);
++	return NOTIFY_OK;
++}
++
++/**
++ * pmic_charger_probe - PMIC charger probe function
++ * @pdev: pmic platform device structure
++ * Context: can sleep
++ *
++ * pmic charger driver initializes its internal data
++ * structure and other  infrastructure components for it
++ * to work as expected.
++ */
++static int pmic_chrgr_probe(struct platform_device *pdev)
++{
++	int ret = 0, i = 0, irq;
++	u8 val, chgr_ctrl0;
++
++	if (!pdev)
++		return -ENODEV;
++
++	chc.batt_health = POWER_SUPPLY_HEALTH_UNKNOWN;
++	chc.dev = &pdev->dev;
++
++	while ((irq = platform_get_irq(pdev, i)) != -ENXIO)
++		chc.irq[i++] = irq;
++
++	chc.irq_cnt = i;
++	chc.pdata = pdev->dev.platform_data;
++	if (!chc.pdata) {
++		dev_err(&pdev->dev, "Platform data not initialized\n");
++		return -EFAULT;
++	}
++
++	platform_set_drvdata(pdev, &chc);
++	chc.reg_map = chc.pdata->reg_map;
++	chc.reg_cnt = sizeof(struct pmic_regs) / sizeof(u16);
++	chc.intmap = chc.pdata->intmap;
++	chc.intmap_size = chc.pdata->intmap_size;
++	chc.vbus_state = VBUS_ENABLE;
++
++	chc.pmic_model = get_pmic_model(pdev->name);
++	dev_info(chc.dev, "PMIC model is %d\n", chc.pmic_model);
++
++	if (chc.pmic_model == INTEL_PMIC_UNKNOWN)
++		return -EINVAL;
++
++	if (INTERNAL_PHY_SUPPORTED(chc.pmic_model)) {
++		ret = pmic_read_reg(chc.reg_map->pmic_usbpath, &val);
++
++		if (!ret && (val & USBPATH_USBSEL_MASK)) {
++			dev_info(chc.dev, "SOC-Internal-USBPHY used\n");
++			chc.is_internal_usb_phy = true;
++			/* Enable internal detection */
++			pmic_write_reg(chc.reg_map->pmic_usbphyctrl, 0x0);
++		} else {
++			dev_info(chc.dev, "External-USBPHY used\n");
++		}
++	}
++
++	chgr_ctrl0 = intel_soc_pmic_readb(chc.reg_map->pmic_chgrctrl0);
++
++	if (chgr_ctrl0 >= 0)
++		chc.tt_lock = !!(chgr_ctrl0 & CHGRCTRL0_TTLCK_MASK);
++
++	if (intel_soc_pmic_update(chc.reg_map->pmic_chgrctrl0,
++			SWCONTROL_ENABLE|CHGRCTRL0_CCSM_OFF_MASK,
++			CHGRCTRL0_SWCONTROL_MASK|CHGRCTRL0_CCSM_OFF_MASK))
++		dev_err(chc.dev, "Error enabling sw control. Charging may continue in h/w control mode\n");
++
++	chc.otg = usb_get_phy(USB_PHY_TYPE_USB2);
++	if (!chc.otg || IS_ERR(chc.otg)) {
++		dev_err(&pdev->dev, "Failed to get otg transceiver!!\n");
++		ret = -EINVAL;
++		goto otg_req_failed;
++	}
++
++	/* Disable VBUS if enable when booting. It will be enabled
++	 * again if OTG ID event is detected later
++	 */
++	intel_pmic_enable_vbus(false);
++
++	INIT_DELAYED_WORK(&chc.evt_work, pmic_event_worker);
++	INIT_LIST_HEAD(&chc.evt_queue);
++
++	INIT_WORK(&chc.extcon_work, pmic_ccsm_extcon_host_work);
++	chc.cable_nb.notifier_call = pmic_ccsm_usb_host_nb;
++	extcon_register_interest(&chc.host_cable, "usb-typec", "USB-Host",
++						&chc.cable_nb);
++
++	ret = pmic_check_initial_events();
++	if (ret)
++		goto otg_req_failed;
++
++	/* register interrupt */
++	for (i = 0; i < chc.irq_cnt; ++i) {
++		ret = request_threaded_irq(chc.irq[i], pmic_isr,
++				pmic_thread_handler,
++				IRQF_ONESHOT|IRQF_NO_SUSPEND,
++				DRIVER_NAME, &chc);
++		if (ret) {
++			dev_err(&pdev->dev, "Error in request_threaded_irq(irq(%d)!!\n",
++				chc.irq[i]);
++			while (i)
++				free_irq(chc.irq[--i], &chc);
++			goto otg_req_failed;
++		}
++	}
++
++	ret = intel_soc_pmic_writeb(chc.reg_map->pmic_mthrmirq1,
++					~MTHRMIRQ1_CCSM_MASK & 0xFF);
++	if (ret)
++		dev_warn(&pdev->dev, "Error writing to register: %x\n",
++				chc.reg_map->pmic_mthrmirq1);
++
++	ret = intel_soc_pmic_update(chc.reg_map->pmic_mchgrirq1,
++				MPWRSRCIRQ_CCSM_VAL, MPWRSRCIRQ_CCSM_MASK);
++	if (ret)
++		dev_warn(&pdev->dev, "Error updating register: %x\n",
++				chc.reg_map->pmic_mchgrirq1);
++
++	chc.batt_health = POWER_SUPPLY_HEALTH_GOOD;
++	return 0;
++
++otg_req_failed:
++	kfree(chc.bcprof);
++	kfree(chc.actual_bcprof);
++	kfree(chc.runtime_bcprof);
++	return ret;
++}
++
++static void pmic_chrgr_do_exit_ops(struct pmic_chrgr_drv_context *chc)
++{
++	/* Empty */
++}
++
++/**
++ * pmic_charger_remove - PMIC Charger driver remove
++ * @pdev: PMIC charger platform device structure
++ * Context: can sleep
++ *
++ * PMIC charger finalizes its internal data structure and other
++ * infrastructure components that it initialized in
++ * pmic_chrgr_probe.
++ */
++static int pmic_chrgr_remove(struct platform_device *pdev)
++{
++	int i, ret = 0;
++	struct pmic_chrgr_drv_context *chc = platform_get_drvdata(pdev);
++
++	if (chc) {
++		if (IS_ERR_OR_NULL(chc->vbus_cdev))
++			ret = PTR_ERR(chc->vbus_cdev);
++		else
++			thermal_cooling_device_unregister(chc->vbus_cdev);
++
++		pmic_chrgr_do_exit_ops(chc);
++		for (i = 0; i < chc->irq_cnt; ++i)
++			free_irq(chc->irq[i], &chc);
++		kfree(chc->bcprof);
++		kfree(chc->actual_bcprof);
++		kfree(chc->runtime_bcprof);
++	}
++
++	return ret;
++}
++
++/*********************************************************************
++ *		Driver initialisation and finalization
++ *********************************************************************/
++
++static struct platform_device_id pmic_ccsm_device_ids[] = {
++	{"bcove_ccsm", 0},
++	{"scove_ccsm", 1},
++	{"wcove_ccsm", 2},
++	{},
++};
++
++static struct platform_driver intel_pmic_ccsm_driver = {
++	.driver = {
++		   .name = DRIVER_NAME,
++		   .owner = THIS_MODULE,
++		   .pm = &pmic_ccsm_pm,
++		   },
++	.probe = pmic_chrgr_probe,
++	.remove = pmic_chrgr_remove,
++	.id_table = pmic_ccsm_device_ids,
++};
++
++
++static int __init pmic_ccsm_init(void)
++{
++	return platform_driver_register(&intel_pmic_ccsm_driver);
++}
++
++static void __exit pmic_ccsm_exit(void)
++{
++	platform_driver_unregister(&intel_pmic_ccsm_driver);
++}
++
++late_initcall(pmic_ccsm_init);
++module_exit(pmic_ccsm_exit);
++
++
++MODULE_AUTHOR("Jenny TC <jenny.tc@intel.com>");
++MODULE_DESCRIPTION("Intel PMIC CCSM Driver");
++MODULE_LICENSE("GPL");
+diff --git a/drivers/power/intel_pmic_ccsm.h b/drivers/power/intel_pmic_ccsm.h
+new file mode 100644
+index 0000000..3d1fda0
+--- /dev/null
++++ b/drivers/power/intel_pmic_ccsm.h
+@@ -0,0 +1,408 @@
++/*
++ * intel_pmic_ccsm.h - Intel MID PMIC CCSM Driver header file
++ *
++ * Copyright (C) 2011 Intel Corporation
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ *
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; version 2 of the License.
++ *
++ * This program is distributed in the hope that it will be useful, but
++ * WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.	See the GNU
++ * General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License along
++ * with this program.
++ *
++ * ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
++ * Author: Jenny TC <jenny.tc@intel.com>
++ */
++
++#include <linux/power/intel_pmic_ccsm.h>
++/*********************************************************************
++ *		Generic defines
++ *********************************************************************/
++
++#ifndef BASINCOVE_VENDORID
++#define BASINCOVE_VENDORID	(3 << 6)
++#endif
++
++#define SHADYCOVE_VENDORID	0x00
++
++#ifndef PMIC_VENDOR_ID_MASK
++#define PMIC_VENDOR_ID_MASK	(3 << 6)
++#endif
++
++#define PMIC_MINOR_REV_MASK	0x07
++
++#ifndef PMIC_MAJOR_REV_MASK
++#define PMIC_MAJOR_REV_MASK	(7 << 3)
++#endif
++
++#define	PMIC_BZONE_LOW		0
++#define	PMIC_BZONE_HIGH		5
++
++#define BC_PMIC_MAJOR_REV_A0	0x00
++#define BC_PMIC_MAJOR_REV_B0	(1 << 3)
++
++#define IRQLVL1_CHRGR_MASK		(1 << 5)
++
++#define THRMZN0_SC_ADCVAL		0x25A1
++#define THRMZN1_SC_ADCVAL		0x3512
++#define THRMZN2_SC_ADCVAL		0x312D
++#define THRMZN3_SC_ADCVAL		0x20FE
++#define THRMZN4_SC_ADCVAL		0x10B8
++
++#define CHGIRQ0_BZIRQ_MASK		(1 << 7)
++#define CHGIRQ0_BAT_CRIT_MASK		(1 << 6)
++#define CHGIRQ0_BAT1_ALRT_MASK		(1 << 5)
++#define CHGIRQ0_BAT0_ALRT_MASK		(1 << 4)
++
++#define MCHGIRQ0_RSVD_MASK		(1 << 7)
++#define MCHGIRQ0_MBAT_CRIT_MASK		(1 << 6)
++#define MCHGIRQ0_MBAT1_ALRT_MASK	(1 << 5)
++#define MCHGIRQ0_MBAT0_ALRT_MASK	(1 << 4)
++
++#define SCHGIRQ0_RSVD_MASK		(1 << 7)
++#define SCHGIRQ0_SBAT_CRIT_MASK		(1 << 6)
++#define SCHGIRQ0_SBAT1_ALRT_MASK	(1 << 5)
++#define SCHGIRQ0_SBAT0_ALRT_MASK	(1 << 4)
++
++#define CHRGRIRQ1_SUSBIDGNDDET_MASK	(1 << 4)
++#define CHRGRIRQ1_SUSBIDFLTDET_MASK	(1 << 3)
++#define CHRGRIRQ1_SUSBIDDET_MASK	(1 << 3)
++#define CHRGRIRQ1_SBATTDET_MASK		(1 << 2)
++#define CHRGRIRQ1_SDCDET_MASK		(1 << 1)
++#define CHRGRIRQ1_SVBUSDET_MASK		(1 << 0)
++#define MCHRGRIRQ1_SUSBIDGNDDET_MASK	(1 << 4)
++#define MCHRGRIRQ1_SUSBIDFLTDET_MASK	(1 << 3)
++#define MCHRGRIRQ1_SUSBIDDET_MASK	(1 << 3)
++#define MCHRGRIRQ1_SBATTDET_MAS		(1 << 2)
++#define MCHRGRIRQ1_SDCDET_MASK		(1 << 1)
++#define MCHRGRIRQ1_SVBUSDET_MASK	(1 << 0)
++#define SCHRGRIRQ1_SUSBIDGNDDET_MASK	(3 << 3)
++#define SCHRGRIRQ1_SUSBIDDET_MASK	(1 << 3)
++#define SCHRGRIRQ1_SBATTDET_MASK	(1 << 2)
++#define SCHRGRIRQ1_SDCDET_MASK		(1 << 1)
++#define SCHRGRIRQ1_SVBUSDET_MASK	(1 << 0)
++#define SHRT_FLT_DET			(1 << 4)
++#define SHRT_GND_DET			(1 << 3)
++
++#define PMIC_CHRGR_INT0_MASK		0xB1
++#define PMIC_CHRGR_CCSM_INT0_MASK	0xB0
++#define PMIC_CHRGR_EXT_CHRGR_INT_MASK	0x01
++
++#define CHGRCTRL0_WDT_NOKICK_MASK	(1 << 7)
++#define CHGRCTRL0_DBPOFF_MASK		(1 << 6)
++#define CHGRCTRL0_CCSM_OFF_MASK		(1 << 5)
++#define CHGRCTRL0_TTLCK_MASK		(1 << 4)
++#define CHGRCTRL0_SWCONTROL_MASK	(1 << 3)
++#define CHGRCTRL0_EXTCHRDIS_MASK	(1 << 2)
++#define	CHRCTRL0_EMRGCHREN_MASK		(1 << 1)
++#define	CHRCTRL0_CHGRRESET_MASK		(1 << 0)
++
++#define WDT_NOKICK_ENABLE		(1 << 7)
++#define WDT_NOKICK_DISABLE		(~WDT_NOKICK_ENABLE & 0xFF)
++
++#define EXTCHRDIS_ENABLE		(1 << 2)
++#define EXTCHRDIS_DISABLE		(~EXTCHRDIS_ENABLE & 0xFF)
++#define SWCONTROL_ENABLE		(1 << 3)
++#define EMRGCHREN_ENABLE		(1 << 1)
++
++#define CHGRCTRL1_DBPEN_MASK		(1 << 7)
++#define CHGRCTRL1_OTGMODE_MASK		(1 << 6)
++#define CHGRCTRL1_FTEMP_EVENT_MASK	(1 << 5)
++#define CHGRCTRL1_FUSB_INLMT_1500	(1 << 4)
++#define CHGRCTRL1_FUSB_INLMT_900	(1 << 3)
++#define CHGRCTRL1_FUSB_INLMT_500	(1 << 2)
++#define CHGRCTRL1_FUSB_INLMT_150	(1 << 1)
++#define CHGRCTRL1_FUSB_INLMT_100	(1 << 0)
++
++#define CHGRSTATUS_SDPB_MASK		(1 << 4)
++#define CHGRSTATUS_CHGDISLVL_MASK	(1 << 2)
++#define CHGRSTATUS_CHGDETB_LATCH_MASK	(1 << 1)
++#define CHGDETB_MASK			(1 << 0)
++
++#define THRMBATZONE_MASK		0x07
++
++#define USBIDEN_MASK		0x01
++#define ACADETEN_MASK		(1 << 1)
++
++#define ID_SHORT		(1 << 4)
++#define ID_SHORT_VBUS		(1 << 4)
++#define ID_NOT_SHORT_VBUS	0
++#define ID_FLOAT_STS		(1 << 3)
++#define R_ID_FLOAT_DETECT	(1 << 3)
++#define R_ID_FLOAT_NOT_DETECT	0
++#define ID_RAR_BRC_STS		(3 << 1)
++#define ID_ACA_NOT_DETECTED	0
++#define R_ID_A			(1 << 1)
++#define R_ID_B			(2 << 1)
++#define R_ID_C			(3 << 1)
++#define ID_GND			(1 << 0)
++#define ID_TYPE_A		0
++#define ID_TYPE_B		1
++#define is_aca(x) ((x & R_ID_A) || (x & R_ID_B) || (x & R_ID_C))
++
++
++#define USBSRCDET_RETRY_CNT		5
++#define USBSRCDET_SLEEP_TIME		200
++#define USBSRCDET_SUSBHWDET_MASK	(3 << 0)
++#define USBSRCDET_USBSRCRSLT_MASK	(0x0F << 2)
++#define USBSRCDET_SDCD_MASK		(1 << 6)
++#define USBSRCDET_SUSBHWDET_DETON	(1 << 0)
++#define USBSRCDET_SUSBHWDET_DETSUCC	(1 << 1)
++#define USBSRCDET_SUSBHWDET_DETFAIL	(3 << 0)
++
++#define USBPHYCTRL_CHGDET_N_POL_MASK	(1 << 1)
++#define USBPHYCTRL_USBPHYRSTB_MASK	(1 << 0)
++
++/* Registers on I2C-dev2-0x6E */
++#define USBPATH_USBSEL_MASK	(1 << 3)
++
++#define HVDCPDET_SLEEP_TIME		2000
++
++#define DBG_USBBC1_SWCTRL_EN_MASK	(1 << 7)
++#define DBG_USBBC1_EN_CMP_DM_MASK	(1 << 2)
++#define DBG_USBBC1_EN_CMP_DP_MASK	(1 << 1)
++#define DBG_USBBC1_EN_CHG_DET_MASK	(1 << 0)
++
++#define DBG_USBBC2_EN_VDMSRC_MASK	(1 << 1)
++#define DBG_USBBC2_EN_VDPSRC_MASK	(1 << 0)
++
++#define DBG_USBBCSTAT_VDATDET_MASK	(1 << 2)
++#define DBG_USBBCSTAT_CMP_DM_MASK	(1 << 1)
++#define DBG_USBBCSTAT_CMP_DP_MASK	(1 << 0)
++
++#define TT_I2CDADDR_ADDR		0x00
++#define TT_CHGRINIT0OS_ADDR		0x01
++#define TT_CHGRINIT1OS_ADDR		0x02
++#define TT_CHGRINIT2OS_ADDR		0x03
++#define TT_CHGRINIT3OS_ADDR		0x04
++#define TT_CHGRINIT4OS_ADDR		0x05
++#define TT_CHGRINIT5OS_ADDR		0x06
++#define TT_CHGRINIT6OS_ADDR		0x07
++#define TT_CHGRINIT7OS_ADDR		0x08
++#define TT_USBINPUTICCOS_ADDR		0x09
++#define TT_USBINPUTICCMASK_ADDR		0x0A
++#define TT_CHRCVOS_ADDR			0X0B
++#define TT_CHRCVMASK_ADDR		0X0C
++#define TT_CHRCCOS_ADDR			0X0D
++#define TT_CHRCCMASK_ADDR		0X0E
++#define TT_LOWCHROS_ADDR		0X0F
++#define TT_LOWCHRMASK_ADDR		0X10
++#define TT_WDOGRSTOS_ADDR		0X11
++#define TT_WDOGRSTMASK_ADDR		0X12
++#define TT_CHGRENOS_ADDR		0X13
++#define TT_CHGRENMASK_ADDR		0X14
++
++#define TT_CUSTOMFIELDEN_ADDR		0X15
++#define TT_HOT_LC_EN			(1 << 1)
++#define TT_COLD_LC_EN			(1 << 0)
++#define TT_HOT_COLD_LC_MASK		(TT_HOT_LC_EN | TT_COLD_LC_EN)
++#define TT_HOT_COLD_LC_EN		(TT_HOT_LC_EN | TT_COLD_LC_EN)
++#define TT_HOT_COLD_LC_DIS		0
++
++#define TT_CHGRINIT0VAL_ADDR		0X20
++#define TT_CHGRINIT1VAL_ADDR		0X21
++#define TT_CHGRINIT2VAL_ADDR		0X22
++#define TT_CHGRINIT3VAL_ADDR		0X23
++#define TT_CHGRINIT4VAL_ADDR		0X24
++#define TT_CHGRINIT5VAL_ADDR		0X25
++#define TT_CHGRINIT6VAL_ADDR		0X26
++#define TT_CHGRINIT7VAL_ADDR		0X27
++#define TT_USBINPUTICC100VAL_ADDR	0X28
++#define TT_USBINPUTICC150VAL_ADDR	0X29
++#define TT_USBINPUTICC500VAL_ADDR	0X2A
++#define TT_USBINPUTICC900VAL_ADDR	0X2B
++#define TT_USBINPUTICC1500VAL_ADDR	0X2C
++#define TT_CHRCVEMRGLOWVAL_ADDR		0X2D
++#define TT_CHRCVCOLDVAL_ADDR		0X2E
++#define TT_CHRCVCOOLVAL_ADDR		0X2F
++#define TT_CHRCVWARMVAL_ADDR		0X30
++#define TT_CHRCVHOTVAL_ADDR		0X31
++#define TT_CHRCVEMRGHIVAL_ADDR		0X32
++#define TT_CHRCCEMRGLOWVAL_ADDR		0X33
++#define TT_CHRCCCOLDVAL_ADDR		0X34
++#define TT_CHRCCCOOLVAL_ADDR		0X35
++#define TT_CHRCCWARMVAL_ADDR		0X36
++#define TT_CHRCCHOTVAL_ADDR		0X37
++#define TT_CHRCCEMRGHIVAL_ADDR		0X38
++#define TT_LOWCHRENVAL_ADDR		0X39
++#define TT_LOWCHRDISVAL_ADDR		0X3A
++#define TT_WDOGRSTVAL_ADDR		0X3B
++#define TT_CHGRENVAL_ADDR		0X3C
++#define TT_CHGRDISVAL_ADDR		0X3D
++
++#define MTHRMIRQ1_CCSM_MASK		0x80
++#define MTHRMIRQ2_CCSM_MASK		0x3
++
++#define MPWRSRCIRQ_CCSM_MASK		0x9F
++#define MPWRSRCIRQ_CCSM_VAL		0x84
++
++#define CHGDISFN_EN_CCSM_VAL		0x50
++#define CHGDISFN_DIS_CCSM_VAL		0x11
++#define CHGDISFN_CCSM_MASK		0x51
++
++/*Interrupt registers*/
++#define BATT_CHR_BATTDET_MASK	(1 << 2)
++/*Status registers*/
++#define BATT_PRESENT		1
++#define BATT_NOT_PRESENT	0
++
++#define BATT_STRING_MAX		8
++#define BATTID_STR_LEN		8
++
++#define CHARGER_PRESENT		1
++#define CHARGER_NOT_PRESENT	0
++
++/*FIXME: Modify default values */
++#define BATT_DEAD_CUTOFF_VOLT		3400	/* 3400 mV */
++#define BATT_CRIT_CUTOFF_VOLT		3700	/* 3700 mV */
++
++#define MSIC_BATT_TEMP_MAX		60	/* 60 degrees */
++#define MSIC_BATT_TEMP_MIN		0
++
++#define BATT_TEMP_WARM			45	/* 45 degrees */
++#define MIN_BATT_PROF			4
++
++#define PMIC_REG_NAME_LEN		28
++#define PMIC_REG_DEF(x) { .reg_name = #x, .addr = x }
++
++#define BIT_POS(x) BIT(x - ((x/16)*16))
++
++#define PMIC_CCSM_IRQ_MAX 6
++
++enum pmic_models {
++	INTEL_PMIC_UNKNOWN = 0,
++	INTEL_PMIC_BCOVE,
++	INTEL_PMIC_SCOVE,
++	INTEL_PMIC_WCOVE,
++};
++
++enum pmic_charger_aca_type {
++	RID_UNKNOWN = 0,
++	RID_A,
++	RID_B,
++	RID_C,
++	RID_FLOAT,
++	RID_GND,
++};
++
++enum pmic_charger_cable_type {
++	PMIC_CHARGER_TYPE_NONE = 0,
++	PMIC_CHARGER_TYPE_SDP,
++	PMIC_CHARGER_TYPE_DCP,
++	PMIC_CHARGER_TYPE_CDP,
++	PMIC_CHARGER_TYPE_ACA,
++	PMIC_CHARGER_TYPE_SE1,
++	PMIC_CHARGER_TYPE_MHL,
++	PMIC_CHARGER_TYPE_FLOAT_DP_DN,
++	PMIC_CHARGER_TYPE_OTHER,
++	PMIC_CHARGER_TYPE_DCP_EXTPHY,
++};
++
++
++char *pmic_regs_name[] = {
++	"pmic_id",
++	"pmic_irqlvl1",
++	"pmic_mirqlvl1",
++	"pmic_chgrirq0",
++	"pmic_schgrirq0",
++	"pmic_mchgrirq0",
++	"pmic_chgrirq1",
++	"pmic_schgrirq1",
++	"pmic_mchgrirq1",
++	"pmic_chgrctrl0",
++	"pmic_chgrctrl1",
++	"pmic_chgdisctrl",
++	"pmic_lowbattdet0",
++	"pmic_lowbattdet1",
++	"pmic_battdetctrl",
++	"pmic_vbusdetctrl",
++	"pmic_vdcindetctrl",
++	"pmic_chgrstatus",
++	"pmic_usbidctrl",
++	"pmic_usbidstat",
++	"pmic_wakesrc",
++	"pmic_usbphyctrl",
++	"pmic_dbg_usbbc1",
++	"pmic_dbg_usbbc2",
++	"pmic_dbg_usbbcstat",
++	"pmic_usbpath",
++	"pmic_usbsrcdetstat",
++	"pmic_chrttaddr",
++	"pmic_chrttdata",
++	"pmic_thrmbatzone",
++	"pmic_thrmzn0h",
++	"pmic_thrmzn0l",
++	"pmic_thrmzn1h",
++	"pmic_thrmzn1l",
++	"pmic_thrmzn2h",
++	"pmic_thrmzn2l",
++	"pmic_thrmzn3h",
++	"pmic_thrmzn3l",
++	"pmic_thrmzn4h",
++	"pmic_thrmzn4l",
++	"pmic_thrmirq0",
++	"pmic_mthrmirq0",
++	"pmic_sthrmirq0",
++	"pmic_thrmirq1",
++	"pmic_mthrmirq1",
++	"pmic_sthrmirq1",
++	"pmic_thrmirq2",
++	"pmic_mthrmirq2",
++	"pmic_sthrmirq2",
++};
++
++struct pmic_event {
++	struct list_head node;
++	u16 pwrsrc_int;
++	u16 battemp_int;
++	u16 misc_int;
++	u16 pwrsrc_int_stat;
++	u16 battemp_int_stat;
++	u16 misc_int_stat;
++};
++
++struct pmic_regs_def {
++	char reg_name[PMIC_REG_NAME_LEN];
++	u16 addr;
++};
++
++struct pmic_chrgr_drv_context {
++	bool invalid_batt;
++	bool is_batt_present;
++	bool current_sense_enabled;
++	bool is_internal_usb_phy;
++	enum pmic_charger_cable_type charger_type;
++	bool otg_mode_enabled;
++	bool tt_lock;
++	unsigned int irq[PMIC_CCSM_IRQ_MAX];		/* GPE_ID or IRQ# */
++	int vbus_state;
++	bool vdcin_det;
++	int irq_cnt;
++	int batt_health;
++	int pmic_model;
++	int intmap_size;
++	int reg_cnt;
++	int cable_state;
++	void __iomem *pmic_intr_iomap;
++	struct pmic_regs *reg_map;
++	struct device *dev;
++	struct pmic_ccsm_int_cfg *intmap;
++	struct ps_batt_chg_prof *bcprof;
++	struct ps_pse_mod_prof *actual_bcprof;
++	struct ps_pse_mod_prof *runtime_bcprof;
++	struct intel_pmic_ccsm_platform_data *pdata;
++	struct usb_phy *otg;
++	struct thermal_cooling_device *vbus_cdev;
++	struct list_head evt_queue;
++	struct delayed_work evt_work;
++	struct extcon_specific_cable_nb host_cable;
++	struct notifier_block cable_nb;
++	struct work_struct extcon_work;
++};
+diff --git a/include/linux/iio/intel_wcove_gpadc.h b/include/linux/iio/intel_wcove_gpadc.h
+new file mode 100644
+index 0000000..db4d653
+--- /dev/null
++++ b/include/linux/iio/intel_wcove_gpadc.h
+@@ -0,0 +1,100 @@
++#ifndef __INTEL_BASINCOVE_GPADC_H__
++#define __INTEL_BASINCOVE_GPADC_H__
++
++#define GPADC_VBAT	(1 << 0)
++#define GPADC_BATID	(1 << 1)
++#define GPADC_IBAT	(1 << 2)
++#define GPADC_PMICTEMP	(1 << 3)
++#define GPADC_BATTEMP0	(1 << 4)
++#define GPADC_BATTEMP1	(1 << 5)
++#define GPADC_SYSTEMP0	(1 << 6)
++#define GPADC_SYSTEMP1	(1 << 7)
++#define GPADC_SYSTEMP2	(1 << 8)
++#define GPADC_USBID	(1 << 9)
++#define GPADC_PEAK	(1 << 10)
++#define GPADC_ADC	(1 << 11)
++#define GPADC_VREF	(1 << 12)
++
++#define MUSBID		(1 << 5)
++#define MPEAK		(1 << 6)
++#define MBATTEMP	(1 << 3)
++#define MSYSTEMP	(1 << 2)
++#define MBATT		(1 << 1)
++#define MVIBATT		(1 << 0)
++#define MGPMEAS		(1 << 4)
++#define MCCTICK		(1 << 7)
++#define PMIC_SPARE03_ADDR	0x5FC2
++#define PMIC_ID_ADDR		0x6E00
++
++#define PMIC_VENDOR_ID_MASK     (0x03 << 6)
++#define PMIC_MINOR_REV_MASK     0x07
++#define PMIC_MAJOR_REV_MASK     (0x07 << 3)
++
++#define PMIC_PROVISIONED	(0x01 << 1)
++#define PMIC_PROV_MASK		(0x03 << 0)
++
++#define GPADC_NUM_CHANNELS	12
++
++enum gpadc_channel_type {
++	PMIC_GPADC_CHANNEL_VBUS = 0,
++	PMIC_GPADC_CHANNEL_BATID,
++	PMIC_GPADC_CHANNEL_PMICTEMP,
++	PMIC_GPADC_CHANNEL_BATTEMP0,
++	PMIC_GPADC_CHANNEL_BATTEMP1,
++	PMIC_GPADC_CHANNEL_SYSTEMP0,
++	PMIC_GPADC_CHANNEL_SYSTEMP1,
++	PMIC_GPADC_CHANNEL_SYSTEMP2,
++	PMIC_GPADC_CHANNEL_USBID,
++	PMIC_GPADC_CHANNEL_PEAK,
++	PMIC_GPADC_CHANNEL_AGND,
++	PMIC_GPADC_CHANNEL_VREF,
++};
++
++struct gpadc_regmap_t {
++	char *name;
++	int cntl;       /* GPADC Conversion Control Bit indicator */
++	int irq_en;	/* GPADC IRQ bit indicator */
++	int rslth;      /* GPADC Conversion Result Register Addr High */
++	int rsltl;      /* GPADC Conversion Result Register Addr Low */
++	int alrt_min_h;
++	int alrt_min_l;
++	int alrt_max_h;
++	int alrt_max_l;
++};
++
++struct gpadc_regs_t {
++	u16 gpadcreq;
++	u16 gpadcreq_irqen;
++	u16 gpadcreq_busy;
++	u16 mirqlvl1;
++	u16 mirqlvl1_adc;
++	u16 adc1cntl;
++	u16 adcirq;
++	u16 madcirq;
++	u16 thrmmonctl;
++	u16 batthermonctl;
++	u16 vbatmonctl;
++	u16 gpmonctl;
++};
++
++struct iio_dev;
++
++struct intel_wcove_gpadc_platform_data {
++	int channel_num;
++	unsigned long intr;
++	u8 intr_mask;
++	u8 thrmmon_val;
++	u8 battthermmon_val;
++	u8 vbatmon_val;
++	u8 gpmon_val;
++	struct iio_map *gpadc_iio_maps;
++	struct gpadc_regmap_t *gpadc_regmaps;
++	struct gpadc_regs_t *gpadc_regs;
++	const struct iio_chan_spec *gpadc_channels;
++};
++
++struct gpadc_result {
++	int data[GPADC_NUM_CHANNELS];
++};
++
++#endif
+diff --git a/include/linux/lnw_gpio.h b/include/linux/lnw_gpio.h
+new file mode 100644
+index 0000000..9cde4d2
+--- /dev/null
++++ b/include/linux/lnw_gpio.h
+@@ -0,0 +1,13 @@
++#ifndef _H_LANGWELL_GPIO_H
++#define _H_LANGWELL_GPIO_H
++
++enum {
++	LNW_GPIO = 0,
++	LNW_ALT_1 = 1,
++	LNW_ALT_2 = 2,
++	LNW_ALT_3 = 3,
++};
++
++void lnw_gpio_set_alt(int gpio, int alt);
++
++#endif
+diff --git a/include/linux/mfd/intel_soc_pmic.h b/include/linux/mfd/intel_soc_pmic.h
+index cf619db..9dc9e4a 100644
+--- a/include/linux/mfd/intel_soc_pmic.h
++++ b/include/linux/mfd/intel_soc_pmic.h
+@@ -13,20 +13,97 @@
+  * GNU General Public License for more details.
+  *
+  * Author: Yang, Bin <bin.yang@intel.com>
+- * Author: Zhu, Lejun <lejun.zhu@linux.intel.com>
+  */
+ 
+ #ifndef __INTEL_SOC_PMIC_H__
+ #define __INTEL_SOC_PMIC_H__
+ 
+-#include <linux/regmap.h>
++#include <linux/gpio.h>
+ 
+-struct intel_soc_pmic {
+-	int irq;
+-	struct regmap *regmap;
+-	struct regmap_irq_chip_data *irq_chip_data;
+-	struct regmap_irq_chip_data *irq_chip_data_level2;
+-	struct device *dev;
++#define	INTEL_PMIC_IRQBASE	456
++#define INTEL_NGPIO_SCORE	102
++#define INTEL_NGPIO_NCORE	28
++
++#define UPDATE_TYPE		(1 << 0)
++#define UPDATE_MASK		(1 << 1)
++
++#define GPIO0IRQ		0x0b
++#define GPIO1IRQ		0x0c
++#define MGPIO0IRQS0		0x19
++#define MGPIO1IRQS0		0x1a
++#define MGPIO0IRQSX		0x1b
++#define MGPIO1IRQSX		0x1c
++#define GPIO0P0CTLO		0x2b
++#define GPIO0P0CTLI		0x33
++#define GPIO1P0CTLO		0x3b
++#define GPIO1P0CTLI		0x43
++
++#define CTLI_INTCNT_NE		(1 << 1)
++#define CTLI_INTCNT_PE		(2 << 1)
++#define CTLI_INTCNT_BE		(3 << 1)
++
++#define CTLO_DIR_OUT		(1 << 5)
++#define CTLO_DRV_CMOS		(0 << 4)
++#define CTLO_DRV_OD		(1 << 4)
++#define CTLO_DRV_REN		(1 << 3)
++#define CTLO_RVAL_2KDW		(0)
++#define CTLO_RVAL_2KUP		(1 << 1)
++#define CTLO_RVAL_50KDW		(2 << 1)
++#define CTLO_RVAL_50KUP		(3 << 1)
++
++#define CTLO_INPUT_DEF	(CTLO_DRV_CMOS | CTLO_DRV_REN | CTLO_RVAL_2KUP)
++#define CTLO_OUTPUT_DEF	(CTLO_DIR_OUT | CTLO_INPUT_DEF)
++
++#define CRYSTAL_COVE 0x0
++#define WHISKEY_COVE 0x1
++#define DOLLAR_COVE 0x2
++
++struct trip_config_map {
++	u16 irq_reg;
++	u16 irq_en;
++	u16 evt_stat;
++	u8 irq_mask;
++	u8 irq_en_mask;
++	u8 evt_mask;
++	u8 trip_num;
++};
++
++struct thermal_irq_map {
++	char handle[20];
++	int num_trips;
++	struct trip_config_map *trip_config;
++};
++
++struct pmic_thermal_data {
++	struct thermal_irq_map *maps;
++	int num_maps;
++};
++
++struct pmic_gpio_data {
++	int type;
++	int num_gpio;
++	int num_vgpio;
++};
++
++struct pmic_gpio {
++	struct mutex		buslock; /* irq_bus_lock */
++#ifdef CONFIG_GPIOLIB
++	struct gpio_chip	chip;
++#endif
++	int			irq;
++	int			irq_base;
++	int			update;
++	int			trigger_type;
++	int			irq_mask;
++	struct pmic_gpio_data	*gpio_data;
+ };
+ 
++int intel_soc_pmic_readb(int reg);
++int intel_soc_pmic_writeb(int reg, u8 val);
++int intel_soc_pmic_setb(int reg, u8 mask);
++int intel_soc_pmic_clearb(int reg, u8 mask);
++int intel_soc_pmic_update(int reg, u8 val, u8 mask);
++int intel_soc_pmic_set_pdata(const char *name, void *data, int len, int id);
++struct device *intel_soc_pmic_dev(void);
++
+ #endif	/* __INTEL_SOC_PMIC_H__ */
+diff --git a/include/linux/mfd/intel_soc_pmic_wcove.h b/include/linux/mfd/intel_soc_pmic_wcove.h
+new file mode 100644
+index 0000000..2c28ae9
+--- /dev/null
++++ b/include/linux/mfd/intel_soc_pmic_wcove.h
+@@ -0,0 +1,88 @@
++/*
++ * intel_soc_pmic_wcove.h - Header file for whiskey cove pmic
++ *
++ * Copyright (C) 2013, 2014 Intel Corporation. All rights reserved.
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * Author: Jenny TC <jenny.tc@intel.com>
++ */
++
++#ifndef __INTEL_PMIC_WCOVE_H__
++#define __INTEL_PMIC_WCOVE_H__
++
++extern struct i2c_adapter *wcove_pmic_i2c_adapter;
++
++#define WC_IRQLVL1_ADDR		0x6E02
++#define WC_IRQLVL1_MASK_ADDR	0x6E0E
++#define WC_PWRSRC_ADDR		0x6E03
++#define WC_MPWRSRC_ADDR		0x6E0F
++#define WC_SPWRSRC_ADDR		0x6E1E
++#define WC_LOWBATTDET0_ADDR	0x6E23
++#define WC_LOWBATTDET1_ADDR	0x6E24
++#define WC_BATTDETCTRL_ADDR	0x6EF0
++#define WC_VBUSDETCTRL_ADDR	0x6E25
++#define WC_VDCINDETCTRL_ADDR	0x6E25
++#define WC_CHGRIRQ0_ADDR	0x6E0A
++#define WC_MCHGRIRQ0_ADDR	0x6E17
++#define WC_SCHGRIRQ0_ADDR	0x5E1A
++#define WC_CHGRCTRL0_ADDR	0x5E16
++#define WC_CHGRCTRL1_ADDR	0x5E17
++#define WC_CHGRCTRL2_ADDR	0x5E18
++#define WC_CHGRSTATUS_ADDR	0x5E19
++#define WC_CHGDISCTRL_ADDR	0x5E2F
++#define WC_THRMBATZONE_ADDR	0x4F22
++
++#define WC_THRMIRQ1_ADDR	0x6E05
++#define WC_MTHRMIRQ1_ADDR	0x6E12
++#define WC_STHRMIRQ1_ADDR	0x4F1A
++
++#define WC_THRMIRQ2_ADDR	0x6E06
++#define WC_MTHRMIRQ2_ADDR	0x6E13
++#define WC_STHRMIRQ2_ADDR	0x4F1B
++
++#define WC_USBPATH_ADDR		0x5E19
++#define WC_USBPHYCTRL_ADDR	0x5E07
++#define WC_USBIDCTRL_ADDR	0x5E05
++#define WC_USBIDEN_MASK		0x01
++#define WC_USBIDSTAT_ADDR	0x00FF
++#define WC_USBSRCDETSTATUS_ADDR	0x5E29
++
++#define WC_DBGUSBBC1_ADDR	0x5FE0
++#define WC_DBGUSBBC2_ADDR	0x5FE1
++#define WC_DBGUSBBCSTAT_ADDR	0x5FE2
++
++#define WC_WAKESRC_ADDR		0x6E22
++#define WC_WAKESRC2_ADDR	0x6EE5
++#define WC_CHRTTADDR_ADDR	0x5E22
++#define WC_CHRTTDATA_ADDR	0x5E23
++
++#define WC_THRMIRQ0_ADDR	0x6E04
++#define WC_MTHRMIRQ0_ADDR	0x6E0D
++#define WC_STHRMIRQ0_ADDR	0x4F19
++#define WC_THRMIRQ1_ADDR	0x6E05
++#define WC_MTHRMIRQ1_ADDR	0x6E12
++#define WC_STHRMIRQ1_ADDR	0x4F1A
++#define WC_THRMIRQ2_ADDR	0x6E06
++#define WC_MTHRMIRQ2_ADDR	0x6E13
++#define WC_STHRMIRQ2_ADDR	0x4F1B
++
++#define WC_THRMZN0H_ADDR	0x4F44
++#define WC_THRMZN0L_ADDR	0x4F45
++#define WC_THRMZN1H_ADDR	0x4F46
++#define WC_THRMZN1L_ADDR	0x4F47
++#define WC_THRMZN2H_ADDR	0x4F48
++#define WC_THRMZN2L_ADDR	0x4F49
++#define WC_THRMZN3H_ADDR	0x4F4A
++#define WC_THRMZN3L_ADDR	0x4F4B
++#define WC_THRMZN4H_ADDR	0x4F4C
++#define WC_THRMZN4L_ADDR	0x4F4D
++
++#endif
+diff --git a/include/linux/power/intel_pmic_ccsm.h b/include/linux/power/intel_pmic_ccsm.h
+new file mode 100644
+index 0000000..04bf560
+--- /dev/null
++++ b/include/linux/power/intel_pmic_ccsm.h
+@@ -0,0 +1,119 @@
++#ifndef __INTEL_PMIC_CCSM_H__
++#define __INTEL_PMIC_CCSM_H__
++
++struct temp_lookup {
++	int temp;
++	int raw;
++};
++
++struct pmic_regs {
++	u16 pmic_id;
++	u16 pmic_irqlvl1;
++	u16 pmic_mirqlvl1;
++	u16 pmic_chgrirq0;
++	u16 pmic_schgrirq0;
++	u16 pmic_mchgrirq0;
++	u16 pmic_chgrirq1;
++	u16 pmic_schgrirq1;
++	u16 pmic_mchgrirq1;
++	u16 pmic_chgrctrl0;
++	u16 pmic_chgrctrl1;
++	u16 pmic_chgdisctrl;
++	u16 pmic_lowbattdet0;
++	u16 pmic_lowbattdet1;
++	u16 pmic_battdetctrl;
++	u16 pmic_vbusdetctrl;
++	u16 pmic_vdcindetctrl;
++	u16 pmic_chgrstatus;
++	u16 pmic_usbidctrl;
++	u16 pmic_usbidstat;
++	u16 pmic_wakesrc;
++	u16 pmic_usbphyctrl;
++	u16 pmic_dbg_usbbc1;
++	u16 pmic_dbg_usbbc2;
++	u16 pmic_dbg_usbbcstat;
++	u16 pmic_usbpath;
++	u16 pmic_usbsrcdetstat;
++	u16 pmic_chrttaddr;
++	u16 pmic_chrttdata;
++	u16 pmic_thrmbatzone;
++	u16 pmic_thrmzn0h;
++	u16 pmic_thrmzn0l;
++	u16 pmic_thrmzn1h;
++	u16 pmic_thrmzn1l;
++	u16 pmic_thrmzn2h;
++	u16 pmic_thrmzn2l;
++	u16 pmic_thrmzn3h;
++	u16 pmic_thrmzn3l;
++	u16 pmic_thrmzn4h;
++	u16 pmic_thrmzn4l;
++	u16 pmic_thrmirq0;
++	u16 pmic_mthrmirq0;
++	u16 pmic_sthrmirq0;
++	u16 pmic_thrmirq1;
++	u16 pmic_mthrmirq1;
++	u16 pmic_sthrmirq1;
++	u16 pmic_thrmirq2;
++	u16 pmic_mthrmirq2;
++	u16 pmic_sthrmirq2;
++};
++
++enum pmic_ccsm_int {
++	PMIC_INT_VBUS = 0,
++	PMIC_INT_DCIN,
++	PMIC_INT_BATTDET,
++	PMIC_INT_USBIDFLTDET,
++	PMIC_INT_USBIDGNDDET,
++	PMIC_INT_USBIDDET,
++	PMIC_INT_CTYP,
++	PMIC_INT_BZIRQ = 16,
++	PMIC_INT_BATCRIT,
++	PMIC_INT_BATCRIT_HOTCOLD,
++	PMIC_INT_BAT0ALRT0,
++	PMIC_INT_BAT0ALRT3,
++	PMIC_INT_BAT1ALRT0,
++	PMIC_INT_BAT1ALRT3,
++	PMIC_INT_EXTCHRGR = 32,
++	PMIC_INT_I2CRDCMP,
++	PMIC_INT_I2CWRCMP,
++	PMIC_INT_I2CERR,
++};
++
++struct pmic_ccsm_int_cfg {
++	enum pmic_ccsm_int pmic_int;
++	u16 ireg;
++	u16 mreg;
++	u16 sreg;
++	u16 mask;
++};
++
++/*
++ * pmic cove charger driver info
++ */
++struct intel_pmic_ccsm_platform_data {
++	void (*cc_to_reg)(int, u8*);
++	void (*cv_to_reg)(int, u8*);
++	void (*inlmt_to_reg)(int, u8*);
++	int max_tbl_row_cnt;
++	unsigned long cache_addr;
++	struct temp_lookup *adc_tbl;
++	struct pmic_regs *reg_map;
++	struct pmic_ccsm_int_cfg *intmap;
++	int intmap_size;
++	bool usb_compliance;
++};
++
++extern int intel_pmic_get_status(void);
++extern int intel_pmic_enable_charging(bool);
++extern int intel_pmic_set_cc(int);
++extern int intel_pmic_set_cv(int);
++extern int intel_pmic_set_ilimma(int);
++extern int intel_pmic_enable_vbus(bool enable);
++/* WA for ShadyCove VBUS removal detect issue */
++extern int intel_pmic_handle_low_supply(void);
++
++extern void intel_pmic_ccsm_dump_regs(void);
++extern int intel_pmic_get_health(void);
++extern int intel_pmic_get_battery_pack_temp(int *);
++
++#endif
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index ef9f159..e6ff7ce 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -13,11 +13,13 @@
+ #ifndef __LINUX_POWER_SUPPLY_H__
+ #define __LINUX_POWER_SUPPLY_H__
+ 
+-#include <linux/device.h>
+ #include <linux/workqueue.h>
+ #include <linux/leds.h>
+ #include <linux/spinlock.h>
+ #include <linux/notifier.h>
++#include <linux/types.h>
++
++struct device;
+ 
+ /*
+  * All voltages, currents, charges, energies, time and temperatures in uV,
+@@ -38,6 +40,11 @@ enum {
+ 	POWER_SUPPLY_STATUS_DISCHARGING,
+ 	POWER_SUPPLY_STATUS_NOT_CHARGING,
+ 	POWER_SUPPLY_STATUS_FULL,
++	POWER_SUPPLY_STATUS_PRU_NULL,
++	POWER_SUPPLY_STATUS_PRU_BOOT,
++	POWER_SUPPLY_STATUS_PRU_ON,
++	POWER_SUPPLY_STATUS_PRU_ALERT,
++	POWER_SUPPLY_STATUS_PRU_ERROR,
+ };
+ 
+ enum {
+@@ -53,6 +60,7 @@ enum {
+ 	POWER_SUPPLY_HEALTH_OVERHEAT,
+ 	POWER_SUPPLY_HEALTH_DEAD,
+ 	POWER_SUPPLY_HEALTH_OVERVOLTAGE,
++	POWER_SUPPLY_HEALTH_OVERCURRENT,
+ 	POWER_SUPPLY_HEALTH_UNSPEC_FAILURE,
+ 	POWER_SUPPLY_HEALTH_COLD,
+ 	POWER_SUPPLY_HEALTH_WATCHDOG_TIMER_EXPIRE,
+@@ -84,6 +92,14 @@ enum {
+ 	POWER_SUPPLY_SCOPE_DEVICE,
+ };
+ 
++enum {
++	POWER_SUPPLY_CHARGE_CURRENT_LIMIT_ZERO = 0,
++	POWER_SUPPLY_CHARGE_CURRENT_LIMIT_LOW,
++	POWER_SUPPLY_CHARGE_CURRENT_LIMIT_MEDIUM,
++	POWER_SUPPLY_CHARGE_CURRENT_LIMIT_HIGH,
++	POWER_SUPPLY_CHARGE_CURRENT_LIMIT_NONE,
++};
++
+ enum power_supply_property {
+ 	/* Properties of type `int' */
+ 	POWER_SUPPLY_PROP_STATUS = 0,
+@@ -119,9 +135,14 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_CURRENT_MAX,
+ 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE,
+ 	POWER_SUPPLY_PROP_CONSTANT_CHARGE_VOLTAGE_MAX,
++	POWER_SUPPLY_CHARGE_CURRENT_LIMIT,
+ 	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT,
+ 	POWER_SUPPLY_PROP_CHARGE_CONTROL_LIMIT_MAX,
+-	POWER_SUPPLY_PROP_INPUT_CURRENT_LIMIT,
++	POWER_SUPPLY_PROP_CHARGE_CURRENT,
++	POWER_SUPPLY_PROP_MAX_CHARGE_CURRENT,
++	POWER_SUPPLY_PROP_CHARGE_VOLTAGE,
++	POWER_SUPPLY_PROP_MAX_CHARGE_VOLTAGE,
++	POWER_SUPPLY_PROP_INLMT,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL_DESIGN,
+ 	POWER_SUPPLY_PROP_ENERGY_EMPTY_DESIGN,
+ 	POWER_SUPPLY_PROP_ENERGY_FULL,
+@@ -133,10 +154,10 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_CAPACITY_ALERT_MAX, /* in percents! */
+ 	POWER_SUPPLY_PROP_CAPACITY_LEVEL,
+ 	POWER_SUPPLY_PROP_TEMP,
+-	POWER_SUPPLY_PROP_TEMP_MAX,
+-	POWER_SUPPLY_PROP_TEMP_MIN,
+ 	POWER_SUPPLY_PROP_TEMP_ALERT_MIN,
+ 	POWER_SUPPLY_PROP_TEMP_ALERT_MAX,
++	POWER_SUPPLY_PROP_MAX_TEMP,
++	POWER_SUPPLY_PROP_MIN_TEMP,
+ 	POWER_SUPPLY_PROP_TEMP_AMBIENT,
+ 	POWER_SUPPLY_PROP_TEMP_AMBIENT_ALERT_MIN,
+ 	POWER_SUPPLY_PROP_TEMP_AMBIENT_ALERT_MAX,
+@@ -145,9 +166,35 @@ enum power_supply_property {
+ 	POWER_SUPPLY_PROP_TIME_TO_FULL_NOW,
+ 	POWER_SUPPLY_PROP_TIME_TO_FULL_AVG,
+ 	POWER_SUPPLY_PROP_TYPE, /* use power_supply.type instead */
++	POWER_SUPPLY_PROP_CHARGE_TERM_CUR,
++	POWER_SUPPLY_PROP_ENABLE_CHARGING,
++	POWER_SUPPLY_PROP_ENABLE_CHARGER,
++	POWER_SUPPLY_PROP_CABLE_TYPE,
++	POWER_SUPPLY_PROP_PRIORITY,
+ 	POWER_SUPPLY_PROP_SCOPE,
+-	POWER_SUPPLY_PROP_CHARGE_TERM_CURRENT,
+-	POWER_SUPPLY_PROP_CALIBRATE,
++	/* Local extensions */
++	POWER_SUPPLY_PROP_USB_HC,
++	POWER_SUPPLY_PROP_USB_OTG,
++	POWER_SUPPLY_PROP_CHARGE_ENABLED,
++	/* Local extensions of type int64_t */
++	POWER_SUPPLY_PROP_CHARGE_COUNTER_EXT,
++	/* Wireless charging */
++	POWER_SUPPLY_PROP_VRECT,
++	POWER_SUPPLY_PROP_IRECT,
++	POWER_SUPPLY_PROP_VDCOUT,
++	POWER_SUPPLY_PROP_IDCOUT,
++	POWER_SUPPLY_PROP_PRU_TEMP,
++	POWER_SUPPLY_PROP_PRU_DCEN,
++	POWER_SUPPLY_PROP_VRECT_MIN_DYN,
++	POWER_SUPPLY_PROP_VRECT_SET_DYN,
++	POWER_SUPPLY_PROP_VRECT_HIGH_DYN,
++	POWER_SUPPLY_PROP_PRU_DYNAMIC_PARAM,
++	POWER_SUPPLY_PROP_PRU_STATIC_PARAM,
++	POWER_SUPPLY_PROP_PTU_STATIC_PARAM,
++	POWER_SUPPLY_PROP_PTU_POWER,
++	POWER_SUPPLY_PROP_PTU_MAX_SRC_IMPEDANCE,
++	POWER_SUPPLY_PROP_PTU_MAX_LOAD_RESISTANCE,
++	POWER_SUPPLY_PROP_PTU_CLASS,
+ 	/* Properties of type `const char *' */
+ 	POWER_SUPPLY_PROP_MODEL_NAME,
+ 	POWER_SUPPLY_PROP_MANUFACTURER,
+@@ -160,18 +207,78 @@ enum power_supply_type {
+ 	POWER_SUPPLY_TYPE_UPS,
+ 	POWER_SUPPLY_TYPE_MAINS,
+ 	POWER_SUPPLY_TYPE_USB,		/* Standard Downstream Port */
++	POWER_SUPPLY_TYPE_USB_INVAL,	/* Invalid Standard Downstream Port */
+ 	POWER_SUPPLY_TYPE_USB_DCP,	/* Dedicated Charging Port */
+ 	POWER_SUPPLY_TYPE_USB_CDP,	/* Charging Downstream Port */
+ 	POWER_SUPPLY_TYPE_USB_ACA,	/* Accessory Charger Adapters */
++	POWER_SUPPLY_TYPE_USB_HOST,	/* To support OTG devices */
++	POWER_SUPPLY_TYPE_USB_TYPEC,    /* To support TYPEC devices */
++	POWER_SUPPLY_TYPE_WIRELESS,
++};
++
++enum power_supply_charger_event {
++	POWER_SUPPLY_CHARGER_EVENT_CONNECT = 0,
++	POWER_SUPPLY_CHARGER_EVENT_UPDATE,
++	POWER_SUPPLY_CHARGER_EVENT_RESUME,
++	POWER_SUPPLY_CHARGER_EVENT_SUSPEND,
++	POWER_SUPPLY_CHARGER_EVENT_DISCONNECT,
++	POWER_SUPPLY_CHARGER_EVENT_LINK_DISCONNECT,
++	POWER_SUPPLY_CHARGER_EVENT_ATTACH,
++	POWER_SUPPLY_CHARGER_EVENT_DETACH,
++	POWER_SUPPLY_CHARGER_EVENT_SELECTED,
++	POWER_SUPPLY_CHARGER_EVENT_DESELECTED,
++};
++
++struct power_supply_charger_cap {
++	enum power_supply_charger_event chrg_evt;
++	enum power_supply_type chrg_type;
++	unsigned int mA; /* input current limit */
++};
++
++enum power_supply_charger_cable_type {
++	POWER_SUPPLY_CHARGER_TYPE_NONE = 0,
++	POWER_SUPPLY_CHARGER_TYPE_USB_SDP = 1 << 0,
++	POWER_SUPPLY_CHARGER_TYPE_USB_DCP = 1 << 1,
++	POWER_SUPPLY_CHARGER_TYPE_USB_CDP = 1 << 2,
++	POWER_SUPPLY_CHARGER_TYPE_USB_ACA = 1 << 3,
++	POWER_SUPPLY_CHARGER_TYPE_AC = 1 << 4,
++	POWER_SUPPLY_CHARGER_TYPE_ACA_DOCK = 1 << 5,
++	POWER_SUPPLY_CHARGER_TYPE_ACA_A = 1 << 6,
++	POWER_SUPPLY_CHARGER_TYPE_ACA_B = 1 << 7,
++	POWER_SUPPLY_CHARGER_TYPE_ACA_C = 1 << 8,
++	POWER_SUPPLY_CHARGER_TYPE_SE1 = 1 << 9,
++	POWER_SUPPLY_CHARGER_TYPE_MHL = 1 << 10,
++	POWER_SUPPLY_CHARGER_TYPE_B_DEVICE = 1 << 11,
++	POWER_SUPPLY_CHARGER_TYPE_USB_TYPEC = 1 << 12,
++	POWER_SUPPLY_CHARGER_TYPE_WIRELESS = 1 << 13,
+ };
+ 
+ enum power_supply_notifier_events {
++	PSY_EVENT_NONE,
+ 	PSY_EVENT_PROP_CHANGED,
++	PSY_BATTERY_EVENT,
++	PSY_CABLE_EVENT,
+ };
+ 
++struct power_supply_cable_props {
++	enum power_supply_charger_event	chrg_evt;
++	enum power_supply_charger_cable_type chrg_type;
++	unsigned int ma;   /* input current limit */
++};
++
++#define POWER_SUPPLY_CHARGER_TYPE_USB \
++	(POWER_SUPPLY_CHARGER_TYPE_USB_SDP | \
++	POWER_SUPPLY_CHARGER_TYPE_USB_DCP | \
++	POWER_SUPPLY_CHARGER_TYPE_USB_CDP | \
++	POWER_SUPPLY_CHARGER_TYPE_USB_ACA | \
++	POWER_SUPPLY_CHARGER_TYPE_ACA_DOCK| \
++	POWER_SUPPLY_CHARGER_TYPE_SE1 |	\
++	POWER_SUPPLY_CHARGER_TYPE_USB_TYPEC)
++
+ union power_supply_propval {
+ 	int intval;
+ 	const char *strval;
++	int64_t int64val;
+ };
+ 
+ struct device_node;
+@@ -396,5 +503,21 @@ static inline bool power_supply_is_watt_property(enum power_supply_property psp)
+ 
+ 	return 0;
+ }
++static inline bool power_supply_is_string_property(
++	enum power_supply_property psp)
++{
++	switch (psp) {
++	case POWER_SUPPLY_PROP_MODEL_NAME:
++	case POWER_SUPPLY_PROP_MANUFACTURER:
++	case POWER_SUPPLY_PROP_SERIAL_NUMBER:
++	case POWER_SUPPLY_PROP_PRU_DYNAMIC_PARAM:
++	case POWER_SUPPLY_PROP_PRU_STATIC_PARAM:
++	case POWER_SUPPLY_PROP_PTU_STATIC_PARAM:
++		return 1;
++	default:
++		break;
++	}
++	return 0;
++}
+ 
+ #endif /* __LINUX_POWER_SUPPLY_H__ */
+diff --git a/include/linux/regulator/intel_whiskey_cove_pmic.h b/include/linux/regulator/intel_whiskey_cove_pmic.h
+new file mode 100644
+index 0000000..8f90a98
+--- /dev/null
++++ b/include/linux/regulator/intel_whiskey_cove_pmic.h
+@@ -0,0 +1,68 @@
++/*
++ * intel_whiskey_cove_plus_pmic.h - Support for WhiskeyCove pmic VR
++ *
++ * Copyright (c) 2014, Intel Corporation.
++ * This program is free software; you can redistribute it and/or modify
++ * it under the terms of the GNU General Public License as published by
++ * the Free Software Foundation; either version 2 of the License, or
++ * (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ */
++#ifndef __INTEL_WHISKEY_COVE_PMIC_H_
++#define __INTEL_WHISKEY_COVE_PMIC_H_
++
++#include <linux/regulator/driver.h>
++
++enum WCOVE_REGULATOR_ID {
++	WCOVE_ID_V1P8A = 1,
++	WCOVE_ID_V1P05A,
++	WCOVE_ID_V1P15,
++	WCOVE_ID_VDDQ,
++	WCOVE_ID_V3P3A,
++	WCOVE_ID_VPROG1A,
++	WCOVE_ID_VPROG1B,
++	WCOVE_ID_VPROG1F,
++	WCOVE_ID_V1P8SX,
++	WCOVE_ID_V1P2SX,
++	WCOVE_ID_V1P2A,
++	WCOVE_ID_VSDIO,
++	WCOVE_ID_V2P8SX,
++	WCOVE_ID_V3P3SD,
++	WCOVE_ID_VPROG2D,
++	WCOVE_ID_VPROG3A,
++	WCOVE_ID_VPROG3B,
++	WCOVE_ID_VPROG4A,
++	WCOVE_ID_VPROG4B,
++	WCOVE_ID_VPROG4C,
++	WCOVE_ID_VPROG4D,
++	WCOVE_ID_VPROG5A,
++	WCOVE_ID_VPROG5B,
++	WCOVE_ID_VPROG6A,
++	WCOVE_ID_VPROG6B,
++};
++
++struct wcove_regulator_info {
++	struct regulator_desc	desc;
++	struct regulator_dev	*regulator;
++	struct regulator_init_data *init_data;
++	unsigned int vctl_reg;
++	unsigned int vsel_reg;
++	unsigned int min_mV;
++	unsigned int max_mV;
++	unsigned int start;
++	unsigned int vsel_mask;
++	unsigned int scale;
++	unsigned int nvolts;
++	unsigned int vctl_mask;
++	unsigned int reg_enbl_mask;
++	unsigned int reg_dsbl_mask;
++	unsigned int *vtable;
++	bool runtime_table;
++};
++
++#endif /* __INTEL_WHISKEY_COVE_PMIC_H_ */
+-- 
+1.9.1
+
