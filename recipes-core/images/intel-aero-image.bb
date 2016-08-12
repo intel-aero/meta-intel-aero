@@ -11,6 +11,7 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
 				gstreamer1.0-plugins-bad \
 				gstreamer1.0-meta-base gstreamer1.0-rtsp-server \
+				jam-stapl \
 				"
 
 # Tests applications
