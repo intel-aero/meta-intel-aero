@@ -4,6 +4,13 @@
 auto lo eth0
 iface lo inet dhcp
 
+# Wireless interface
+auto wlan0
+iface wlan0 inet static
+	address 192.168.1.2
+	netmask 255.255.255.0
+	network 192.168.1.0
+
 # Ethernet/RNDIS gadget (g_ether)
 # ... or on host side, usbnet and random hwaddr
 auto usb0
