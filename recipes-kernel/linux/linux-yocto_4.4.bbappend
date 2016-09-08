@@ -14,6 +14,7 @@ SRC_URI += "file://lpss.cfg \
 			file://usbotg.cfg \
 			file://regulator.cfg \
 			file://camera.cfg \
+			file://wdt.cfg \
 			"
 
 # List of binarie files
