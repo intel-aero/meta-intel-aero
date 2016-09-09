@@ -20,6 +20,9 @@ IMAGE_INSTALL += "packagegroup-core-buildessential"
 # Tests applications
 IMAGE_INSTALL += "packagegroup-core-tools"
 
+# OpenCV
+IMAGE_INSTALL += "opencv"
+
 # Platform configurations
 APPEND += "console=tty1 console=ttyS0,115200n8"
 GRUB_TIMEOUT = "3"
