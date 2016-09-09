@@ -17,3 +17,6 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 # Tests applications
 IMAGE_INSTALL += "packagegroup-core-tools"
 
+# Platform configurations
+APPEND += "console=tty1 console=ttyS0,115200n8"
+GRUB_TIMEOUT = "3"
