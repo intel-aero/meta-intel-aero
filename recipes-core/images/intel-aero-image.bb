@@ -14,6 +14,9 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				aero-watchdog \
 				"
 
+# Build tools
+IMAGE_INSTALL += "packagegroup-core-buildessential"
+
 # Tests applications
 IMAGE_INSTALL += "packagegroup-core-tools"
 
