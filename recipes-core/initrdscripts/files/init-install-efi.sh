@@ -210,6 +210,8 @@ if [ -f /run/media/$1/EFI/BOOT/grub.cfg ]; then
     GRUBCFG="$EFIDIR/grub.cfg"
     cp /run/media/$1/EFI/BOOT/grub.cfg $GRUBCFG
     # Update grub config for the installed image
+    # Change from ttyS1 to ttyS0
+    sed -i "s/ttyS1/ttyS0/" $GRUBCFG
     # Delete the install entry
     sed -i "/menuentry 'install'/,/^}/d" $GRUBCFG
     # Delete the initrd lines
