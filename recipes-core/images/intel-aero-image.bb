@@ -20,6 +20,9 @@ IMAGE_INSTALL += "packagegroup-core-buildessential"
 # Tests applications
 IMAGE_INSTALL += "packagegroup-core-tools"
 
+# AirMap
+IMAGE_INSTALL += "packagegroup-airmap"
+
 # OpenCV
 IMAGE_INSTALL += "opencv"
 
