@@ -7,4 +7,5 @@ PR = "r0"
 
 RDEPENDS_${PN} = "\
 		python-cryptography \
+		airmap \
 		"
