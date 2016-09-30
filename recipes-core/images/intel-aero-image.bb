@@ -29,6 +29,9 @@ IMAGE_INSTALL += "opencv"
 # Dronekit
 IMAGE_INSTALL_append = " dronekit-python"
 
+# PX4
+IMAGE_INSTALL_append = " packagegroup-px4"
+
 # Platform configurations
 APPEND += "console=ttyS1,115200n8 console=tty1"
 GRUB_TIMEOUT = "3"
