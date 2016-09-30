@@ -48,6 +48,7 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0016-kernel-bug-fix-for-intermittent-green-patches.patch \
 			file://0017-intel-mid-split-keyboard-gpio-SFI-implementation-fro.patch \
 			file://0018-input-soc_button_array-add-debounce-parameter-to-the.patch \
+			file://0019-regulator-whiskey_cove-implements-WhiskeyCove-pmic-V.patch \
 			"
 
 do_install_append() {
