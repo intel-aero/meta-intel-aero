@@ -26,6 +26,9 @@ IMAGE_INSTALL += "packagegroup-airmap"
 # OpenCV
 IMAGE_INSTALL += "opencv"
 
+# Dronekit
+IMAGE_INSTALL_append = " dronekit-python"
+
 # Platform configurations
 APPEND += "console=ttyS1,115200n8 console=tty1"
 GRUB_TIMEOUT = "3"
