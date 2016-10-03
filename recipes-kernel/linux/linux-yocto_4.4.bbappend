@@ -1,3 +1,10 @@
+# Intel Aero Machine kernel support
+KBRANCH_intel-aero = "standard/base"
+KMACHINE_intel-aero ?= "common-pc-64"
+SRCREV_machine_intel-aero ?= "3d2455f9da30f923c6bd69014fad4cc4ea738be6"
+COMPATIBLE_MACHINE_intel-aero = "intel-aero"
+LINUX_VERSION_intel-aero = "4.4.3"
+
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
 # List of configs to enable in kernel .config
