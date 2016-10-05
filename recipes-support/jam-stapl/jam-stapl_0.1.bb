@@ -12,7 +12,7 @@ INSANE_SKIP_${PN}-dbg += "arch"
 
 SRC_URI = "file://jam \
 		file://LICENSE\
-		file://CR_FPGA.jam \
+		file://aerofc_fpga.jam \
 		"
 
 S = "${WORKDIR}"
@@ -20,6 +20,6 @@ S = "${WORKDIR}"
 do_install() {
     install -d ${D}${bindir}
     install jam ${D}${bindir}
-	install -d ${D}${sysconfdir}
-	install ${S}/CR_FPGA.jam ${D}${sysconfdir}
+    install -d ${D}${sysconfdir}
+    install ${S}/aerofc_fpga.jam ${D}${sysconfdir}
 }
