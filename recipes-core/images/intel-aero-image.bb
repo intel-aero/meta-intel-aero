@@ -35,3 +35,6 @@ IMAGE_INSTALL_append = " packagegroup-px4"
 # Platform configurations
 APPEND += "console=ttyS1,115200n8 console=tty1"
 GRUB_TIMEOUT = "3"
+
+# librealsense
+IMAGE_INSTALL += "librealsense"
