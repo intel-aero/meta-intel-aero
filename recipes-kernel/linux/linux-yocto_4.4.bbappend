@@ -45,6 +45,7 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0013-temp-atomisp-support.patch \
 			file://0014-OV8858-add-sensor-sources-to-cloudsrest-platform.patch \
 			file://0015-kernel-Adding-support-for-HW-flip-using-AtomISP.patch \
+			file://0016-kernel-bug-fix-for-intermittent-green-patches.patch \
 			"
 
 do_install_append() {
