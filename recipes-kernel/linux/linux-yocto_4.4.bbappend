@@ -46,6 +46,8 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0014-OV8858-add-sensor-sources-to-cloudsrest-platform.patch \
 			file://0015-kernel-Adding-support-for-HW-flip-using-AtomISP.patch \
 			file://0016-kernel-bug-fix-for-intermittent-green-patches.patch \
+			file://0017-intel-mid-split-keyboard-gpio-SFI-implementation-fro.patch \
+			file://0018-input-soc_button_array-add-debounce-parameter-to-the.patch \
 			"
 
 do_install_append() {
