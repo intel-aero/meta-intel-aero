@@ -1,0 +1,32 @@
+#!/bin/sh
+#
+# fan_ctrl
+# description: Control RTF Fan for Aero platform
+#
+
+on() {
+  echo 1 > /sys/class/gpio/gpio$FAN_gpio/value
+}
+
+off() {
+  echo 0 > /sys/class/gpio/gpio$FAN_gpio/value
+}
+
+FAN_gpio=485
+if [ ! -d "/sys/class/gpio/gpio$FAN_gpio/" ]; then
+  echo $FAN_gpio > /sys/class/gpio/export
+  echo out > /sys/class/gpio/gpio$FAN_gpio/direction
+fi
+
+case "$1" in
+  on)
+        on
+        ;;
+  off)
+        off
+        ;;
+  *)
+        echo $"Usage: $0 {on|off}"
+        exit 1
+esac
+exit 0
