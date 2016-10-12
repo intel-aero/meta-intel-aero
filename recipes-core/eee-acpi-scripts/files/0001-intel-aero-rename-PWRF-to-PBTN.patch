@@ -1,0 +1,25 @@
+From af228d0ca2701032c36f618650e1264cdef16ac1 Mon Sep 17 00:00:00 2001
+From: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
+Date: Wed, 12 Oct 2016 02:30:10 -0700
+Subject: [PATCH] intel-aero: rename PWRF to PBTN
+
+In intel-aero platform the power button press is tied to the event
+generated to PBTN, acpid will map it to the needed script to
+shutdown the platform.
+
+Signed-off-by: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
+---
+ events/powerbtn | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/events/powerbtn b/events/powerbtn
+index 3722ebf..262d7d3 100644
+--- a/events/powerbtn
++++ b/events/powerbtn
+@@ -1,2 +1,2 @@
+-event=button/power PWRF
++event=button/power PBTN
+ action=/etc/acpi/actions/power.sh
+-- 
+1.9.1
+
