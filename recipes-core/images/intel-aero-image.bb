@@ -12,6 +12,7 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				gstreamer1.0-meta-base gstreamer1.0-rtsp-server \
 				jam-stapl \
 				aero-watchdog \
+				aero-utils \
 				"
 
 # Build tools
