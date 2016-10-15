@@ -1,0 +1,262 @@
+#!/bin/sh
+# -*- mode: shell-script; tab-width: 4; indent-tabs-mode: nil; c-basic-offset: 4 -*-
+#
+# Copyright (C) 2012, 2013, 2016 O.S. Systems Software LTDA.
+# Authored-by:  Otavio Salvador <otavio@ossystems.com.br>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License version 2 as
+# published by the Free Software Foundation.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along
+# with this program; if not, write to the Free Software Foundation, Inc.,
+# 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA.
+#
+# Add options for the script
+# Copyright (C) 2013 Freescale Semiconductor, Inc.
+
+CWD=`pwd`
+PROGNAME="setup-environment"
+
+usage()
+{
+    echo -e "\nUsage: source $PROGNAME <build-dir>
+    <build-dir>: specifies the build directory location (required)
+
+If undefined, this script will set \$MACHINE to 'imx6qsabresd'.
+"
+
+    ls sources/*/conf/machine/*.conf > /dev/null 2>&1
+    if [ $? -eq 0 ]; then
+        echo -e "
+Supported machines: `echo; ls sources/*/conf/machine/*.conf \
+| sed s/\.conf//g | sed -r 's/^.+\///' | xargs -I% echo -e "\t%"`
+
+To build for a machine listed above, run this script as:
+MACHINE=<machine> source $PROGNAME <build-dir>
+"
+    fi
+}
+
+clean_up()
+{
+   unset EULA LIST_MACHINES VALID_MACHINE
+   unset CWD TEMPLATES SHORTOPTS LONGOPTS ARGS PROGNAME
+   unset generated_config updated
+   unset MACHINE SDKMACHINE DISTRO OEROOT
+}
+
+# get command line options
+SHORTOPTS="h"
+LONGOPTS="help"
+
+ARGS=$(getopt --options $SHORTOPTS  \
+  --longoptions $LONGOPTS --name $PROGNAME -- "$@" )
+# Print the usage menu if invalid options are specified
+if [ $? != 0 -o $# -lt 1 ]; then
+   usage && clean_up
+   return 1
+fi
+
+eval set -- "$ARGS"
+while true;
+do
+    case $1 in
+        -h|--help)
+           usage
+           clean_up
+           return 0
+           ;;
+        --)
+           shift
+           break
+           ;;
+    esac
+done
+
+if [ "$(whoami)" = "root" ]; then
+    echo "ERROR: do not use the BSP as root. Exiting..."
+fi
+
+if [ -z "$MACHINE" ]; then
+    MACHINE='imx6qsabresd'
+fi
+
+# Check the machine type specified
+LIST_MACHINES=`ls -1 $CWD/sources/*/conf/machine`
+VALID_MACHINE=`echo -e "$LIST_MACHINES" | grep ${MACHINE}.conf$ | wc -l`
+if [ "x$MACHINE" = "x" ] || [ "$VALID_MACHINE" = "0" ]; then
+    echo -e "\nThe \$MACHINE you have specified ($MACHINE) is not supported by this build setup"
+    usage && clean_up
+    return 1
+else
+    if [ ! -e $1/conf/local.conf.sample ]; then
+        echo "Configuring for ${MACHINE}"
+    fi
+fi
+
+if [ -z "$SDKMACHINE" ]; then
+    SDKMACHINE='i686'
+fi
+
+if [ -z "$DISTRO" ]; then
+    DISTRO='poky'
+fi
+
+OEROOT=$PWD/sources/poky
+if [ -e $PWD/sources/oe-core ]; then
+    OEROOT=$PWD/sources/oe-core
+fi
+
+# Ensure all files in sources/base are kept in sync with project root
+updated=
+for f in $CWD/sources/base/*; do
+    file="$(basename $f)"
+    if [ "$file" = "conf" ] || echo $file | grep -q '~$'; then
+        continue
+    fi
+
+    if ! cmp -s "$file" "$f"; then
+        updated="true"
+        [ -e $file ] && chmod u+w $file
+        cp $f $file
+    fi
+done
+if [ "$updated" = "true" ]; then
+    echo "The project root content has been updated. Please run '$PROGNAME' again."
+    return
+fi
+
+. $OEROOT/oe-init-build-env $CWD/$1 > /dev/null
+
+# if conf/local.conf not generated, no need to go further
+if [ ! -e conf/local.conf ]; then
+    clean_up && return 1
+fi
+
+# Clean up PATH, because if it includes tokens to current directories somehow,
+# wrong binaries can be used instead of the expected ones during task execution
+export PATH="`echo $PATH | sed 's/\(:.\|:\)*:/:/g;s/^.\?://;s/:.\?$//'`"
+
+generated_config=
+if [ ! -e conf/local.conf.sample ]; then
+    mv conf/local.conf conf/local.conf.sample
+
+    # Generate the local.conf based on the Yocto defaults
+    TEMPLATES=$CWD/sources/base/conf 
+    grep -v '^#\|^$' conf/local.conf.sample > conf/local.conf
+    cat >> conf/local.conf <<EOF
+
+DL_DIR ?= "\${BSPDIR}/downloads/"
+EOF
+    # Change settings according environment
+    sed -e "s,MACHINE ??=.*,MACHINE ??= '$MACHINE',g" \
+        -e "s,SDKMACHINE ??=.*,SDKMACHINE ??= '$SDKMACHINE',g" \
+        -e "s,DISTRO ?=.*,DISTRO ?= '$DISTRO',g" \
+        -i conf/local.conf
+
+    cp $TEMPLATES/* conf/
+
+    for s in $HOME/.oe $HOME/.yocto; do
+        if [ -e $s/site.conf ]; then
+            echo "Linking $s/site.conf to conf/site.conf"
+            ln -s $s/site.conf conf
+        fi
+    done
+
+    generated_config=1
+fi
+
+# Handle EULA setting
+EULA_ACCEPTED=
+
+# EULA has been accepted already (ACCEPT_FSL_EULA is set in local.conf)
+if grep -q '^\s*ACCEPT_FSL_EULA\s*=\s*["'\'']..*["'\'']' conf/local.conf; then
+    EULA_ACCEPTED=1
+fi
+
+if [ -z "$EULA_ACCEPTED" ] && [ -n "$EULA" ]; then
+    # The FSL EULA is not set as accepted in local.conf, but the EULA
+    # variable is set in the environment, so we just configure
+    # ACCEPT_FSL_EULA in local.conf according to $EULA.
+    echo "ACCEPT_FSL_EULA = \"$EULA\"" >> conf/local.conf
+elif [ -n "$EULA_ACCEPTED" ]; then
+    # The FSL EULA has been accepted once, so ACCEPT_FSL_EULA is set
+    # in local.conf.  No need to do anything.
+    :
+else
+    # THE FSL EULA is not set as accepted in local.conf, and EULA is
+    # not set in the environment, so we need to ask user if he/she
+    # accepts the FSL EULA:
+    cat <<EOF
+
+Some BSPs depend on libraries and packages which are covered by Freescale's
+End User License Agreement (EULA). To have the right to use these binaries in
+your images, you need to read and accept the following...
+
+EOF
+
+    sleep 4
+
+    more -d $CWD/sources/meta-fsl-arm/EULA
+    echo
+    REPLY=
+    while [ -z "$REPLY" ]; do
+        echo -n "Do you accept the EULA you just read? (y/n) "
+        read REPLY
+        case "$REPLY" in
+            y|Y)
+            echo "EULA has been accepted."
+            echo "ACCEPT_FSL_EULA = \"1\"" >> conf/local.conf
+            ;;
+            n|N)
+            echo "EULA has not been accepted."
+            ;;
+            *)
+            REPLY=
+            ;;
+        esac
+    done
+fi
+
+cat <<EOF
+
+Welcome to Freescale Community BSP
+
+The Yocto Project has extensive documentation about OE including a
+reference manual which can be found at:
+    http://yoctoproject.org/documentation
+
+For more information about OpenEmbedded see their website:
+    http://www.openembedded.org/
+
+You can now run 'bitbake <target>'
+
+Common targets are:
+    core-image-minimal
+    meta-toolchain
+    meta-toolchain-sdk
+    adt-installer
+    meta-ide-support
+
+EOF
+
+if [ -n "$generated_config" ]; then
+    cat <<EOF
+Your build environment has been configured with:
+
+    MACHINE=$MACHINE
+    SDKMACHINE=$SDKMACHINE
+    DISTRO=$DISTRO
+    EULA=$EULA
+EOF
+else
+    echo "Your configuration files at $1 have not been touched."
+fi
+
+clean_up
