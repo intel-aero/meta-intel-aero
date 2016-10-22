@@ -30,6 +30,9 @@ IMAGE_INSTALL += "opencv"
 # Dronekit
 IMAGE_INSTALL_append = " dronekit-python"
 
+# MavROS
+IMAGE_INSTALL_append = " mavros"
+
 # PX4
 IMAGE_INSTALL_append = " packagegroup-px4"
 
