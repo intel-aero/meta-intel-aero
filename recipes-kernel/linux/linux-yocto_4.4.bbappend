@@ -50,6 +50,9 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0018-input-soc_button_array-add-debounce-parameter-to-the.patch \
 			file://0019-regulator-whiskey_cove-implements-WhiskeyCove-pmic-V.patch \
 			file://0020-pmic-whiskeycove-add-vqmmc-regulator-for-SD-host-vol.patch \
+			file://0021-ov8858-fix-return-logic-on-ov8858_s_ctrl.patch \
+			file://0022-ov8858-fix-regulator-management-on-ov8858_s_ctrl.patch \
+			file://0023-ov7251-remove-early-return-statement.patch \
 			"
 
 do_install_append() {
