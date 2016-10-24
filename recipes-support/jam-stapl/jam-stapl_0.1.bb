@@ -12,7 +12,8 @@ INSANE_SKIP_${PN}-dbg += "arch"
 
 SRC_URI = "file://jam \
 		file://LICENSE\
-		file://aerofc_fpga.jam \
+		file://aero_compute_board_only_fpga.jam \
+		file://aero_RTF_kit_fpga.jam \
 		"
 
 S = "${WORKDIR}"
@@ -21,5 +22,6 @@ do_install() {
     install -d ${D}${bindir}
     install jam ${D}${bindir}
     install -d ${D}${sysconfdir}
-    install ${S}/aerofc_fpga.jam ${D}${sysconfdir}
+    install ${S}/aero_compute_board_only_fpga.jam ${D}${sysconfdir}
+    install ${S}/aero_RTF_kit_fpga.jam ${D}${sysconfdir}
 }
