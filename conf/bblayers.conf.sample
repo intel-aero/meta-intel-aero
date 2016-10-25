@@ -12,6 +12,7 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-qt4 \
   ##OEROOT##/meta-qt5 \
   ##OEROOT##/meta-uav \
+  ##OEROOT##/meta-ros \
   ##OEROOT##/meta-intel-aero \
   ##OEROOT##/meta-intel-aero-connectivity \
   ##OEROOT##/meta-intel-aero-librealsense \
