@@ -1,11 +1,11 @@
-From 4673a73e8558c984e8048f44e4f4b885e9878d13 Mon Sep 17 00:00:00 2001
+From fb1e23ee38be2e21d751f727d70b6bf9f6f9cf03 Mon Sep 17 00:00:00 2001
 From: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
-Date: Thu, 20 Oct 2016 14:06:01 -0700
+Date: Tue, 25 Oct 2016 23:29:33 -0700
 Subject: [PATCH] ov8858: fix regulator management on ov8858_s_ctrl
 
-ov8858_s_ctrl can also communicate through i2c with the sensor
-if the voltages are not enabled it will cause a timeout in the
-i2c line.
+ov8858_s_ctrl (called from v4l2_ctrl_handler_setup during probe)
+communicates through i2c with the sensor. At thid point the voltages
+have been powered off and this causes a timeout in the i2c line.
 
 This will fix the bug uncovered by the usage of the regulator
 framework:
@@ -17,35 +17,31 @@ ov8858 i2c-INT3477:00: write DW9718_DATA_M  failed -5
 
 Signed-off-by: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
 ---
- drivers/media/i2c/ov8858.c | 8 ++++++++
- 1 file changed, 8 insertions(+)
+ drivers/media/i2c/ov8858.c | 9 +++++++++
+ 1 file changed, 9 insertions(+)
 
 diff --git a/drivers/media/i2c/ov8858.c b/drivers/media/i2c/ov8858.c
-index 8001995..9410504 100644
+index 8001995..a1fc14d 100644
 --- a/drivers/media/i2c/ov8858.c
 +++ b/drivers/media/i2c/ov8858.c
-@@ -1765,6 +1765,12 @@ static int ov8858_s_ctrl(struct v4l2_ctrl *ctrl)
- 	 * doesn't need to be taken here.
- 	 */
- 
+@@ -2263,8 +2263,17 @@ static int ov8858_probe(struct i2c_client *client,
+ 	/* Use same lock for controls as for everything else. */
+ 	dev->ctrl_handler.lock = &dev->input_lock;
+ 	dev->sd.ctrl_handler = &dev->ctrl_handler;
++
 +	ret = __ov8858_s_power(&dev->sd, 1);
 +	if (ret) {
 +		dev_err(&client->dev, "power-up error %d!\n", ret);
 +		return ret;
 +	}
 +
- 	switch (ctrl->id) {
- 	case V4L2_CID_RUN_MODE:
- 		switch (ctrl->val) {
-@@ -1809,6 +1815,8 @@ static int ov8858_s_ctrl(struct v4l2_ctrl *ctrl)
- 		ret = -EINVAL;
- 	}
+ 	v4l2_ctrl_handler_setup(&dev->ctrl_handler);
  
 +	__ov8858_s_power(&dev->sd, 0);
 +
- 	return ret;
- }
- 
+ 	ret = media_entity_init(&dev->sd.entity, 1, &dev->pad, 0);
+ 	if (ret) {
+ 		ov8858_remove(client);
 -- 
 1.9.1
 
