@@ -33,6 +33,9 @@ IMAGE_INSTALL_append = " dronekit-python"
 # MavROS
 IMAGE_INSTALL_append = " mavros"
 
+# Enable ros comm packagegroup
+IMAGE_INSTALL_append = " packagegroup-ros-comm"
+
 # PX4
 IMAGE_INSTALL_append = " packagegroup-px4"
 
