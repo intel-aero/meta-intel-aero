@@ -13,6 +13,7 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				jam-stapl \
 				aero-watchdog \
 				aero-utils \
+				px4-fw \
 				"
 
 # Build tools
