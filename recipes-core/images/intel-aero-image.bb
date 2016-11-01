@@ -12,6 +12,8 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				gstreamer1.0-meta-base gstreamer1.0-rtsp-server \
 				jam-stapl \
 				aero-watchdog \
+				aero-utils \
+				px4-fw \
 				"
 
 # Build tools
@@ -28,6 +30,12 @@ IMAGE_INSTALL += "opencv"
 
 # Dronekit
 IMAGE_INSTALL_append = " dronekit-python"
+
+# MavROS
+IMAGE_INSTALL_append = " mavros"
+
+# Enable ros comm packagegroup
+IMAGE_INSTALL_append = " packagegroup-ros-comm"
 
 # PX4
 IMAGE_INSTALL_append = " packagegroup-px4"

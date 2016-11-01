@@ -1,0 +1,43 @@
+From 49e418e92cbbfaad0cab997ca004d1a64752eb06 Mon Sep 17 00:00:00 2001
+From: Eddie Luo <eddie.luo@intel.com>
+Date: Thu, 6 Oct 2016 21:00:09 -0700
+Subject: [PATCH] kernel: bug fix for intermittent green patches during capture
+
+This bug is caused by wrong MSI setting in PCI config space.
+The 4.4 kernel sets MSI correctly only after ISR is enabled.
+
+Tracked-on:https://jira01.devtools.intel.com/browse/CR-147
+
+Signed-off-by: Eddie Luo <eddie.luo@intel.com>
+
+diff --git a/drivers/media/pci/atomisp/atomisp_driver/atomisp_v4l2.c b/drivers/media/pci/atomisp/atomisp_driver/atomisp_v4l2.c
+index 297400c..5b42df5 100644
+--- a/drivers/media/pci/atomisp/atomisp_driver/atomisp_v4l2.c
++++ b/drivers/media/pci/atomisp/atomisp_driver/atomisp_v4l2.c
+@@ -1516,11 +1516,6 @@ static int atomisp_pci_probe(struct pci_dev *dev,
+ 	if (init_atomisp_wdts(isp) != 0)
+ 		goto wdt_work_queue_fail;
+ 
+-	/* save the iunit context only once after all the values are init'ed. */
+-	atomisp_save_iunit_reg(isp);
+-
+-	pm_runtime_put_noidle(&dev->dev);
+-	pm_runtime_allow(&dev->dev);
+ 
+ 	hmm_init_mem_stat(repool_pgnr, dypool_enable, dypool_pgnr);
+ 	err = hmm_pool_register(repool_pgnr, HMM_POOL_TYPE_RESERVED);
+@@ -1540,6 +1535,11 @@ static int atomisp_pci_probe(struct pci_dev *dev,
+ 		goto request_irq_fail;
+ 	}
+ 
++	/* save the iunit context only once after all the values are init'ed. */
++	atomisp_save_iunit_reg(isp);
++	pm_runtime_put_noidle(&dev->dev);
++	pm_runtime_allow(&dev->dev);
++
+ 	/* Load firmware into ISP memory */
+ 	if (!defer_fw_load) {
+ 		err = atomisp_css_load_firmware(isp);
+-- 
+1.9.1
+
