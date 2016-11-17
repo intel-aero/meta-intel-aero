@@ -46,3 +46,9 @@ GRUB_TIMEOUT = "3"
 
 # librealsense
 IMAGE_INSTALL += "librealsense"
+
+addtask create_link after do_rootfs before do_image
+
+do_create_link() {
+	ln -s /lib ${WORKDIR}/rootfs/lib64
+}
