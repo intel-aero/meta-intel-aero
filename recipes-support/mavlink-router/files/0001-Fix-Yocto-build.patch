@@ -1,0 +1,40 @@
+From 932ed637913736c96dde804cc26a8a43d199d737 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Jos=C3=A9=20Roberto=20de=20Souza?= <jose.souza@intel.com>
+Date: Wed, 16 Nov 2016 16:59:48 -0200
+Subject: [PATCH] Fix Yocto build
+
+---
+ Makefile.am  | 2 +-
+ configure.ac | 3 +++
+ 2 files changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/Makefile.am b/Makefile.am
+index 1993582..2241114 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -20,7 +20,7 @@ clean-local:
+ 	rm -rf $(top_builddir)/include/mavlink
+ 
+ include/mavlink/common/mavlink.h: modules/mavlink/pymavlink/tools/mavgen.py modules/mavlink/message_definitions/v1.0/common.xml
+-	$(AM_V_GEN)python2 $(srcdir)/modules/mavlink/pymavlink/tools/mavgen.py \
++	PYTHONPATH=$(PKG_CONFIG_SYSROOT_DIR)/usr/lib/python2.7/site-packages/ $(AM_V_GEN)$(PYTHON) $(srcdir)/modules/mavlink/pymavlink/tools/mavgen.py \
+ 		-o include/mavlink \
+ 		--lang C \
+ 		--wire-protocol 2.0 \
+diff --git a/configure.ac b/configure.ac
+index 96257ed..be823e1 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -17,6 +17,9 @@ AM_MAINTAINER_MODE([enable])
+ AM_INIT_AUTOMAKE([check-news foreign 1.11 silent-rules tar-pax no-dist-gzip dist-xz subdir-objects color-tests parallel-tests])
+ AM_SILENT_RULES([yes])
+ 
++m4_define_default([_AM_PYTHON_INTERPRETER_LIST],[python2 python2.7])
++AM_PATH_PYTHON(2.7)
++
+ #####################################################################
+ # Program checks and configurations
+ #####################################################################
+-- 
+2.10.2
+

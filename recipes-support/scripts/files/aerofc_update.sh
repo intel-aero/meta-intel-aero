@@ -39,6 +39,6 @@ if [ "$#" -ne 1 ]; then
     exit
 fi
 
-/etc/init.d/mavlink_bridge.sh stop
+/etc/init.d/mavlink_router.sh stop
 px_uploader.py --port /dev/ttyS1 --baud-flightstack 1500000 $1
-/etc/init.d/mavlink_bridge.sh start
+/etc/init.d/mavlink_router.sh start
