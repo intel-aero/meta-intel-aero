@@ -14,6 +14,7 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				aero-watchdog \
 				aero-utils \
 				px4-fw \
+				mavlink-router \
 				"
 
 # Build tools
