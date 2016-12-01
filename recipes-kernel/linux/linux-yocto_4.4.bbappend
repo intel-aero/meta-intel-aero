@@ -53,6 +53,7 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0021-ov8858-fix-return-logic-on-ov8858_s_ctrl.patch \
 			file://0022-ov8858-fix-regulator-management-on-ov8858_s_ctrl.patch \
 			file://0023-ov7251-remove-early-return-statement.patch \
+			file://0024-acpi-Workaround-for-not-registering-CAN-controller.patch \
 			"
 
 do_install_append() {
