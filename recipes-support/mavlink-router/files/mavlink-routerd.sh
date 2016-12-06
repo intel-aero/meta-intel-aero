@@ -13,13 +13,13 @@
 
 # Functions to do individual actions
 start(){
-	 /usr/bin/mavlink_router -b 1500000 -e 192.168.7.255 -e 192.168.1.255 /dev/ttyS1 &
+	 /usr/bin/mavlink-routerd -b 1500000 -e 192.168.7.255 -e 192.168.1.255 /dev/ttyS1 &
 }
 stop(){
-	kill `ps | grep -m 1 'mavlink_router' | awk '{print $1}'`
+	kill `ps | grep -m 1 'mavlink-routerd' | awk '{print $1}'`
 }
 status(){
-	ps | grep -m 1 mavlink_router
+	ps | grep -m 1 mavlink-routerd
 }
 
 case "$1" in
@@ -37,7 +37,7 @@ case "$1" in
 	status
 	;;
   *)
-	echo "Usage: mavlink_router { start | stop | status | restart }" >&2
+	echo "Usage: mavlink-routerd { start | stop | status | restart }" >&2
 	exit 1
 	;;
 esac
