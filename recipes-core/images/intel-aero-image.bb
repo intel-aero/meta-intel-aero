@@ -49,7 +49,13 @@ GRUB_TIMEOUT = "3"
 IMAGE_INSTALL += "librealsense"
 
 addtask create_link after do_rootfs before do_image
+addtask create_os_version_file after do_rootfs before do_image
 
 do_create_link() {
 	ln -s /lib ${WORKDIR}/rootfs/lib64
+}
+
+do_create_os_version_file() {
+	echo "v01.00.04" > ${WORKDIR}/rootfs/etc/os_version
+	chmod 444 ${WORKDIR}/rootfs/etc/os_version
 }
