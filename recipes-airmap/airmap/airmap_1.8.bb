@@ -8,7 +8,7 @@ DESCRIPTION = "Description: The AirMap airspace management system facilitates \
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=d9bb3515869c0f426cb8441c899ae7f5"
 
-RDEPENDS_${PN} += "python-json libgps libgpsd gpsd-conf gpsd-gpsctl gps-utils"
+RDEPENDS_${PN} += "python-json libgps libgpsd gpsd-conf gpsd-gpsctl gps-utils python-paho-mqtt"
 
 SRC_URI = "file://requests-master.zip \
 	file://AirMapSDK-Embedded.zip \
