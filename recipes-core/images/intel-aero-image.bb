@@ -1,7 +1,7 @@
 DESCRIPTION = "Fully functional image for Intel Aero platform"
 LICENSE = "MIT"
 
-IMAGE_FEATURES += "package-management ssh-server-dropbear x11-base"
+IMAGE_FEATURES += "package-management ssh-server-openssh x11-base"
 
 inherit core-image
 
