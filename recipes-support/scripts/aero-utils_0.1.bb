@@ -11,6 +11,7 @@ SRC_URI = "file://led_ctrl \
 		file://fan_ctrl \
                 file://aerofc_update.sh \
                 file://px_uploader.py \
+                file://get_aero_version.py \
 		"
 
 S = "${WORKDIR}"
@@ -23,4 +24,5 @@ do_install() {
     install -d ${D}${sbindir}
     install -m 0755 ${WORKDIR}/aerofc_update.sh ${D}${sbindir}
     install -m 0755 ${WORKDIR}/px_uploader.py ${D}${sbindir}
+    install -m 0755 ${WORKDIR}/get_aero_version.py ${D}${sbindir}
 }

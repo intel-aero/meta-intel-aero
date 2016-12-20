@@ -1,7 +1,7 @@
 #! /bin/sh
 
 ### BEGIN INIT INFO
-# Provides:        mavlink_bridge
+# Provides:        MAVLink Router
 # Required-Start:  $network
 # Required-Stop:   $network
 # Default-Start:   2 3 4 5
@@ -13,10 +13,13 @@
 
 # Functions to do individual actions
 start(){
-	mavlink_bridge.py 192.168.1.2 &
+	 /usr/bin/mavlink-routerd -b 1500000 -e 192.168.7.255 -e 192.168.1.255 /dev/ttyS1 &
 }
 stop(){
-	kill `ps | grep -m 1 'mavlink_bridge.py' | awk '{print $1}'`
+	kill `ps | grep -m 1 'mavlink-routerd' | awk '{print $1}'`
+}
+status(){
+	ps | grep -m 1 mavlink-routerd
 }
 
 case "$1" in
@@ -31,10 +34,10 @@ case "$1" in
 	start
 	;;
   status)
-	ps | grep -m 1 mavlink_bridge.py
+	status
 	;;
   *)
-	echo "Usage: mavlink_bridge { start | stop | status | restart }" >&2
+	echo "Usage: mavlink-routerd { start | stop | status | restart }" >&2
 	exit 1
 	;;
 esac

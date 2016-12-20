@@ -16,6 +16,7 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-intel-aero \
   ##OEROOT##/meta-intel-aero-connectivity \
   ##OEROOT##/meta-intel-aero-librealsense \
+  ##OEROOT##/intel-aero-samples \
   ##OEROOT##/meta-openembedded/meta-oe \
   ##OEROOT##/meta-openembedded/meta-python \
   ##OEROOT##/meta-openembedded/meta-networking \
