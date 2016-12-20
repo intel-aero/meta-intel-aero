@@ -32,13 +32,33 @@
 #
 ############################################################################
 
-set -e
-
 if [ "$#" -ne 1 ]; then
     echo "Usage: ./aerofc_update.sh <PX4 firmware file>"
     exit
 fi
 
-/etc/init.d/mavlink-routerd.sh stop
-px_uploader.py --port /dev/ttyS1 --baud-flightstack 1500000 $1
-/etc/init.d/mavlink-routerd.sh start
+/usr/sbin/get_aero_version.py
+
+router_running=0
+if [ -n "$(fuser /dev/ttyS1)" ]; then
+    router_running=1
+
+    # try stopping router
+    /etc/init.d/mavlink-routerd.sh stop
+    p=$(fuser /dev/ttyS1)
+    if [ -n "$p" ]; then
+        echo "Process $p is running and keeping UART busy"
+        exit 1
+    fi
+fi
+
+echo -e "Updating firmware on AeroFC"
+/usr/sbin/px_uploader.py \
+    --port /dev/ttyS1 \
+    --baud-flightstack 1500000 \
+    "$1"
+
+# run router again if it was previously running
+if [ $router_running ]; then
+    /etc/init.d/mavlink-routerd.sh start
+fi
