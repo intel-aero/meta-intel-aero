@@ -1,17 +1,19 @@
 DESCRIPTION = "Route Mavlink packets between endpoints"
-DEPENDS = "python python-pip python-future"
+DEPENDS = "python python-future"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=93888867ace35ffec2c845ea90b2e16b"
 
 SRCREV = "${AUTOREV}"
 SRC_URI = "gitsm://git@github.com/01org/mavlink-router.git;protocol=https;branch=master"
 SRC_URI += "file://mavlink-routerd.sh"
-# Hack to fix build, python should also look for python module in build/tmp/sysroots/intel-aero/usr/lib/python2.7
-SRC_URI += "file://0001-Fix-Yocto-build.patch"
 
 S = "${WORKDIR}/git"
 
 inherit autotools pythonnative
+
+do_compile_prepend () {
+    export PYTHONPATH="${PKG_CONFIG_SYSROOT_DIR}/usr/lib/python2.7/site-packages/"
+}
 
 do_install_append () {
 	install -d ${D}${sysconfdir}/init.d
