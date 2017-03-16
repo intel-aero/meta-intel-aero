@@ -16,6 +16,8 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				px4-fw \
 				mavlink-router \
 				"
+#Camera Streaming Daemon support
+IMAGE_INSTALL += "libavahi-client libavahi-glib"
 
 # Build tools
 IMAGE_INSTALL += "packagegroup-core-buildessential"
