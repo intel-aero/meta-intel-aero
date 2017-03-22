@@ -13,9 +13,7 @@
 
 # Functions to do individual actions
 start(){
-	 nohup /usr/bin/mavlink-routerd -b 1500000 \
-		-e 192.168.7.255 \
-		-e 192.168.1.255 /dev/ttyS1 \
+	 nohup /usr/bin/mavlink-routerd \
 		2>/var/log/mavlink-routerd.log \
 		>/dev/null &
 }

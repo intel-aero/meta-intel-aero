@@ -55,7 +55,7 @@ fi
 echo -e "Updating firmware on AeroFC"
 /usr/sbin/px_uploader.py \
     --port /dev/ttyS1 \
-    --baud-flightstack 1500000 \
+    --baud-flightstack 1500000,460800,115200 \
     "$1"
 
 # run router again if it was previously running
