@@ -5,7 +5,8 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=93888867ace35ffec2c845ea90b2e16b"
 
 SRCREV = "${AUTOREV}"
 SRC_URI = "gitsm://git@github.com/01org/mavlink-router.git;protocol=https;branch=master"
-SRC_URI += "file://mavlink-routerd.sh"
+SRC_URI += "file://mavlink-routerd.sh \
+            file://main.conf"
 
 S = "${WORKDIR}/git"
 
@@ -18,6 +19,9 @@ do_compile_prepend () {
 do_install_append () {
 	install -d ${D}${sysconfdir}/init.d
 	install -m 0755 ${WORKDIR}/mavlink-routerd.sh ${D}${sysconfdir}/init.d
+
+	install -d ${D}${sysconfdir}/mavlink-router/config.d
+	install -m 0755 ${WORKDIR}/main.conf ${D}${sysconfdir}/mavlink-router/main.conf
 
 	install -d ${D}${sysconfdir}/rc1.d
 	ln -sf ../init.d/mavlink-routerd.sh ${D}${sysconfdir}/rc1.d/S71mavlink-routerd
