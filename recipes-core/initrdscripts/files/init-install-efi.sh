@@ -79,14 +79,7 @@ for hdname in $hdnamelist; do
     fi
     echo
     # Get user choice
-    while true; do
-        echo -n "Do you want to install this image there? [y/n] "
-        read answer
-        if [ "$answer" = "y" -o "$answer" = "n" ]; then
-            break
-        fi
-        echo "Please answer y or n"
-    done
+    answer="y"
     if [ "$answer" = "y" ]; then
         TARGET_DEVICE_NAME=$hdname
         break
@@ -250,8 +243,6 @@ umount /boot
 sync
 
 echo "Remove your installation media, and press ENTER"
-
-read enter
 
 echo "Rebooting..."
 reboot -f
