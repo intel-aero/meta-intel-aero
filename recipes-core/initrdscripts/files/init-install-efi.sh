@@ -162,7 +162,7 @@ echo "Formatting $bootfs to vfat..."
 mkfs.vfat $bootfs
 
 echo "Formatting $rootfs to ext3..."
-mkfs.ext3 $rootfs
+mkfs.ext3 -F $rootfs
 
 echo "Formatting swap partition...($swap)"
 mkswap $swap
