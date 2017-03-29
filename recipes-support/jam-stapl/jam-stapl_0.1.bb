@@ -14,6 +14,7 @@ SRC_URI = "file://jam \
 		file://LICENSE\
 		file://aero_compute_board_only_fpga.jam \
 		file://aero_RTF_kit_fpga.jam \
+		file://aero_RTF_kit_AeroFC_recover_fpga.jam \
 		"
 
 S = "${WORKDIR}"
@@ -24,4 +25,5 @@ do_install() {
     install -d ${D}${sysconfdir}
     install ${S}/aero_compute_board_only_fpga.jam ${D}${sysconfdir}
     install ${S}/aero_RTF_kit_fpga.jam ${D}${sysconfdir}
+    install ${S}/aero_RTF_kit_AeroFC_recover_fpga.jam ${D}${sysconfdir}
 }
