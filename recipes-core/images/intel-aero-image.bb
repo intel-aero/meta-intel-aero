@@ -15,6 +15,7 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				aero-utils \
 				px4-fw \
 				mavlink-router \
+				efibootmgr \
 				"
 #Camera Streaming Daemon support
 IMAGE_INSTALL += "libavahi-client libavahi-glib"
