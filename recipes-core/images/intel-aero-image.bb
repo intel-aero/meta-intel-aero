@@ -36,7 +36,7 @@ IMAGE_INSTALL += "opencv"
 IMAGE_INSTALL_append = " dronekit-python"
 
 # MavROS
-IMAGE_INSTALL_append = " mavros"
+IMAGE_INSTALL_append = " mavros realsense-camera"
 
 # Enable ros comm packagegroup
 IMAGE_INSTALL_append = " packagegroup-ros-comm"
