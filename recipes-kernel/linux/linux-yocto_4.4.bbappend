@@ -58,6 +58,7 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 
 # List of patches to apply due to librealsense
 SRC_URI += "file://RW10-pixel-format-detect.patch \
+			file://realsense_camera_formats_linux-yocto_4.4.patch \
 			"
 do_install_append() {
 			install -d ${D}/lib/firmware
