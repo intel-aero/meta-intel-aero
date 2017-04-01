@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# fan_ctrl
+# aero-fan-ctrl
 # description: Control RTF Fan for Aero platform
 #
 
