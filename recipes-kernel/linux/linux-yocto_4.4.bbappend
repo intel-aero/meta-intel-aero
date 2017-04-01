@@ -56,6 +56,10 @@ SRC_URI += "file://0001-thermal-add-cherryview-support-to-soc-dts.patch \
 			file://0024-acpi-Workaround-for-not-registering-CAN-controller.patch \
 			"
 
+# List of patches to apply due to librealsense
+SRC_URI += "file://RW10-pixel-format-detect.patch \
+			file://realsense_camera_formats_linux-yocto_4.4.patch \
+			"
 do_install_append() {
 			install -d ${D}/lib/firmware
 			install -m 0777 ${WORKDIR}/shisp_2401a0_v21.bin ${D}/lib/firmware
