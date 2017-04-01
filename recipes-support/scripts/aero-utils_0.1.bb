@@ -22,10 +22,10 @@ do_install() {
     install -d ${D}${bindir}
 
     install aero-led-ctrl ${D}${bindir}
-    ln -s aero-led-ctrl ${D}{bindir}/led_ctrl
+    ln -s aero-led-ctrl ${D}${bindir}/led_ctrl
 
     install aero-fan-ctrl ${D}${bindir}
-    ln -s aero-fan-ctrl ${D}{bindir}/fan_ctrl
+    ln -s aero-fan-ctrl ${D}${bindir}/fan_ctrl
 
     install -d ${D}${sbindir}
     install -m 0755 ${WORKDIR}/aerofc-update.sh ${D}${sbindir}
