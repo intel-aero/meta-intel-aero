@@ -1,6 +1,6 @@
 #!/bin/sh
 #
-# led_ctrl
+# aero-led-ctrl
 # description: Control RTF LED for Aero platform
 #
 
