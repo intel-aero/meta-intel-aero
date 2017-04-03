@@ -19,7 +19,7 @@ index 8b76ef5..09fe10b 100644
 @@ -1,3 +1,4 @@
  #!/bin/sh
  
-+/usr/bin/led_ctrl shutdown_seq
++/usr/bin/aero-led-ctrl shutdown_seq
  /sbin/shutdown -h now "Power button pressed"
 -- 
 1.9.1
