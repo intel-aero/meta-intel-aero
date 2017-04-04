@@ -1,5 +1,3 @@
-FILES_${PN} += "${includedir}/${PN}"
-
 do_install_append () {
         install -d ${D}${prefix}/local/bin
         install -m 0755 ${S}/config/usb-R200-in ${D}${prefix}/local/bin
