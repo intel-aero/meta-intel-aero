@@ -23,6 +23,8 @@ do_install_append () {
 	install -d ${D}${sysconfdir}/mavlink-router/config.d
 	install -m 0755 ${WORKDIR}/main.conf ${D}${sysconfdir}/mavlink-router/main.conf
 
+	install -d ${D}/home/root/logs
+
 	install -d ${D}${sysconfdir}/rc1.d
 	ln -sf ../init.d/mavlink-routerd.sh ${D}${sysconfdir}/rc1.d/S71mavlink-routerd
 	install -d ${D}${sysconfdir}/rc2.d
