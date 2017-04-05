@@ -3,7 +3,7 @@ DEPENDS = "python python-future"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=93888867ace35ffec2c845ea90b2e16b"
 
-SRCREV = "889b5f54677dfbdf7b1a1cdbf8788cf8a3213a90
+SRCREV = "889b5f54677dfbdf7b1a1cdbf8788cf8a3213a90"
 SRC_URI = "gitsm://git@github.com/01org/mavlink-router.git;protocol=https;branch=master"
 SRC_URI += "file://mavlink-routerd.sh \
             file://main.conf"
