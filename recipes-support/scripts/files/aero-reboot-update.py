@@ -18,6 +18,7 @@ Copyright (C) 2017  Intel Corporation. All rights reserved.
 """
 
 from __future__ import print_function
+import argparse
 import os
 import os.path
 import shutil
@@ -171,11 +172,19 @@ def check_usbdrive():
 
 
 def main():
+    parser = argparse.ArgumentParser(description='Helper tool to reboot Aero into update image')
+    parser.add_argument('-f', '--force', action='store_true',
+                        help='disable sanity checks if there\'s update media connected')
+    args = parser.parse_args()
+
     # always cleanup ourselves on exit
     signal.signal(signal.SIGINT, sig_handler)
 
     mount_efivarfs()
-    check_usbdrive()
+
+    if not args.force:
+        check_usbdrive()
+        print('\n')
 
     with os.fdopen(os.open(efivar, os.O_WRONLY | os.O_CREAT, 0o644), 'w') as f:
         buf = struct.pack('<Ih', 0x07, usb_entry)
@@ -184,7 +193,7 @@ def main():
     cleanup_mountpoints()
 
     timeout = 5
-    print('\n\nSetup done to boot from USB.')
+    print('Setup done to boot from USB.')
     print('Rebooting in %d seconds.' % timeout)
     print('Press ^C to cancel.')
 
