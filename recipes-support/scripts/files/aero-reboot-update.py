@@ -170,6 +170,31 @@ def check_usbdrive():
     print('Current OS version: ', cur_version)
     print('New OS version: ', new_version)
 
+def notify_leds():
+    # leave RGB LED as blue
+    LED_RED=437
+    LED_GREEN=397
+    LED_BLUE=403
+    leds = [ LED_RED, LED_GREEN, LED_BLUE ]
+
+    for l in leds:
+        # gpio may already be exported
+        try:
+            with open('/sys/class/gpio/export', 'w') as f:
+                f.write('%d' % l)
+        except:
+            pass
+
+        with open('/sys/class/gpio/gpio%d/direction' % l, 'w') as f:
+            f.write('out')
+
+    with open('/sys/class/gpio/gpio%d/value' % LED_RED, 'w') as f:
+        f.write('1')
+    with open('/sys/class/gpio/gpio%d/value' % LED_GREEN, 'w') as f:
+        f.write('1')
+    with open('/sys/class/gpio/gpio%d/value' % LED_BLUE, 'w') as f:
+        f.write('0')
+
 
 def main():
     parser = argparse.ArgumentParser(description='Helper tool to reboot Aero into update image')
@@ -201,6 +226,8 @@ def main():
         time.sleep(1)
         print('.')
 
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    notify_leds()
     subprocess.call(['reboot'])
 
 if __name__ == "__main__":
