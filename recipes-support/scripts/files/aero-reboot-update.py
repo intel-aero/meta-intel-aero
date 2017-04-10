@@ -137,8 +137,18 @@ def check_usbdrive():
     except:
         die("USB device '%s' doesn't look like an update image.\nRefusing to reboot." % blk_devices[0])
 
-    with open('/etc/os_version', 'r') as f:
-        cur_version = f.read().strip()
+    try:
+        with open('/etc/os_version', 'r') as f:
+            cur_version = f.read().strip()
+    except:
+        try:
+            # assume it's an old version and use /proc/version
+            with open('/proc/version', 'r') as f:
+                cur_version = 'Before v1.00.04 [%s]' % (f.read().strip())
+        except:
+            # user may have a custom kernel or we don't know what happened:
+            # don't block the reboot
+            cur_version = '(Unknown)'
 
     try:
         with open(os.path.join(aero_update_dir, 'rootfs', 'etc', 'os_version'), 'r') as f:
