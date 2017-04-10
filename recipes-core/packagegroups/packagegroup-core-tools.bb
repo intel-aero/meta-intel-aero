@@ -12,4 +12,6 @@ RDEPENDS_${PN} = "\
 		screen \
 		lsof \
 		strace \
+		tar \
+		procps \
 		"
