@@ -17,6 +17,8 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				mavlink-router \
 				efibootmgr \
 				"
+IMAGE_INSTALL += "rng-tools"
+
 #Camera Streaming Daemon support
 IMAGE_INSTALL += "libavahi-client libavahi-glib"
 
