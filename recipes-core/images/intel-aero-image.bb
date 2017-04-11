@@ -56,6 +56,7 @@ GRUB_TIMEOUT = "3"
 
 # librealsense
 IMAGE_INSTALL += "librealsense"
+IMAGE_INSTALL += "librealsense-graphical-examples"
 
 addtask create_link after do_rootfs before do_image
 addtask create_os_version_file after do_rootfs before do_image
