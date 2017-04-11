@@ -18,6 +18,8 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				efibootmgr \
 				"
 
+IMAGE_INSTALL += "openssh-sftp-server"
+
 # increase entropy right after boot so hostapd succeeds authentication
 IMAGE_INSTALL += "rng-tools"
 
