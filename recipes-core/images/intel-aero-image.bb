@@ -67,6 +67,6 @@ do_create_link() {
 }
 
 do_create_os_version_file() {
-	echo "v1.2-dev" > ${WORKDIR}/rootfs/etc/os_version
+	echo "v1.2" > ${WORKDIR}/rootfs/etc/os_version
 	chmod 444 ${WORKDIR}/rootfs/etc/os_version
 }
