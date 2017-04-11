@@ -17,6 +17,8 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				mavlink-router \
 				efibootmgr \
 				"
+IMAGE_INSTALL += "rng-tools"
+
 #Camera Streaming Daemon support
 IMAGE_INSTALL += "libavahi-client libavahi-glib"
 
@@ -55,7 +57,7 @@ addtask create_link after do_rootfs before do_image
 addtask create_os_version_file after do_rootfs before do_image
 
 do_create_link() {
-	ln -s /lib ${WORKDIR}/rootfs/lib64
+	ln -s lib ${WORKDIR}/rootfs/lib64
 }
 
 do_create_os_version_file() {
