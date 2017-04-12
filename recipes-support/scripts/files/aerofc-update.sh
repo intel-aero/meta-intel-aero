@@ -37,7 +37,7 @@ if [ "$#" -ne 1 ]; then
     exit
 fi
 
-/usr/sbin/get_aero_version.py
+/usr/sbin/aero-get-version.py
 
 router_running=0
 if [ -n "$(fuser /dev/ttyS1)" ]; then
