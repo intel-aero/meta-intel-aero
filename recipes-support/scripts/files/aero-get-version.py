@@ -31,7 +31,7 @@ def FPGA_version():
 		else:
 			lines = output.split('\n')
 			words = lines[4].split()
-			print words[1] + " " + words[2]
+			print words[1]
 	except:
 		print "unknown"
 
