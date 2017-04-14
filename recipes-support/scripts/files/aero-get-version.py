@@ -10,6 +10,7 @@
 ############################################################################
 
 import commands
+import os.path
 
 def main():
 	print "\n"
@@ -46,12 +47,22 @@ def AirMap_version():
 	except:
 		print "unknown"
 
-def OS_version():
-	try:
-		f = open("/etc/os_version", "r")
-		print "OS_VERSION = " + f.readline().rstrip('\n')
-	except:
-		print "OS_VERSION = unknown"
+def OS_version(rootdir='/'):
+    version = None
+    try:
+        with open(os.path.join(rootdir, 'etc', 'os-release'), 'r') as f:
+            for line in f:
+                if line.startswith('PRETTY_NAME='):
+                    version = line.split('PRETTY_NAME=')[1].strip('"').strip()
+                    if version:
+                        break
+    except:
+        pass
+
+    if not version:
+        version = 'unknown'
+
+    print "OS_VERSION = %s" % version
 
 def BIOS_version():
 	try:
