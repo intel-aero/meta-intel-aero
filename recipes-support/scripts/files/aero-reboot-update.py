@@ -117,19 +117,11 @@ def get_version(rootdir):
     version = None
     try:
         with open(os.path.join(rootdir, 'etc', 'os-release'), 'r') as f:
-            name = ''
             for line in f:
-                if line.startswith('NAME='):
-                    name = line.split('NAME=')[1].strip('"').strip()
-                elif line.startswith('VERSION='):
-                    version = line.split('VERSION=')[1].strip('"').strip()
-
-                if name and version:
-                    break
-            if name:
-                version = '%s %s' % (name, version)
-            else:
-                version = None
+                if line.startswith('PRETTY_NAME='):
+                    version = line.split('PRETTY_NAME=')[1].strip('"').strip()
+                    if version:
+                        break
     except:
         # old file containing the version
         try:
