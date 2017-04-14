@@ -113,6 +113,34 @@ def mount_efivarfs():
     except:
         die('Could not mount efivarfs')
 
+def get_version(rootdir):
+    version = None
+    try:
+        with open(os.path.join(rootdir, 'etc', 'os-release'), 'r') as f:
+            name = ''
+            for line in f:
+                if line.startswith('NAME='):
+                    name = line.split('NAME=')[1].strip('"').strip()
+                elif line.startswith('VERSION='):
+                    version = line.split('VERSION=')[1].strip('"').strip()
+
+                if name and version:
+                    break
+            if name:
+                version = '%s %s' % (name, version)
+            else:
+                version = None
+    except:
+        # old file containing the version
+        try:
+            with open(os.path.join(rootdir, 'etc', 'os_version'), 'r') as f:
+                version = f.read().strip()
+        except:
+            version = None
+
+    return version
+
+
 def check_usbdrive():
     # possible external drives: /dev/sd*
     blk_links = list(filter(is_possible_usb_pathname, os.listdir('/sys/block')))
@@ -137,10 +165,8 @@ def check_usbdrive():
     except:
         die("USB device '%s' doesn't look like an update image.\nRefusing to reboot." % blk_devices[0])
 
-    try:
-        with open('/etc/os_version', 'r') as f:
-            cur_version = f.read().strip()
-    except:
+    cur_version = get_version('/')
+    if not cur_version:
         try:
             # assume it's an old version and use /proc/version
             with open('/proc/version', 'r') as f:
@@ -150,30 +176,7 @@ def check_usbdrive():
             # don't block the reboot
             cur_version = '(Unknown)'
 
-    try:
-        with open(os.path.join(aero_update_dir, 'rootfs', 'etc', 'os_version'), 'r') as f:
-            new_version = f.read().strip()
-    except:
-        try:
-            with open(os.path.join(aero_update_dir, 'rootfs', 'etc', 'os-release'), 'r') as f:
-                name = ''
-                version = ''
-                for line in f:
-                    if line.startswith('NAME='):
-                        name = line.split('NAME=')[1].strip('"').strip()
-                    elif line.startswith('VERSION='):
-                        version = line.split('VERSION=')[1].strip('"').strip()
-
-                    if name and version:
-                        break
-                if name:
-                    new_version = '%s %s' % (name, version)
-                else:
-                    new_version = version
-                new_version.strip()
-        except:
-            new_version = None
-
+    new_version = get_version(os.path.join(aero_update_dir, 'rootfs'))
     if not new_version:
         die("USB device '%s' contains update image but no version information was found.\nRefusing to reboot." % blk_devices[0])
 
