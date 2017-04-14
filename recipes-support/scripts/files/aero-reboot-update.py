@@ -160,9 +160,9 @@ def check_usbdrive():
                 version = ''
                 for line in f:
                     if line.startswith('NAME='):
-                        name = line.split('NAME=')[1].strip()
+                        name = line.split('NAME=')[1].strip('"').strip()
                     elif line.startswith('VERSION='):
-                        version = line.split('VERSION=')[1].strip()
+                        version = line.split('VERSION=')[1].strip('"').strip()
 
                     if name and version:
                         break
