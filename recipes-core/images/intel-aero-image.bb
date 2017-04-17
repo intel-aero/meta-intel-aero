@@ -18,7 +18,8 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				efibootmgr \
 				"
 
-IMAGE_INSTALL += "spi-xfer"
+# Add /etc/os-release
+IMAGE_INSTALL += "os-release"
 
 IMAGE_INSTALL += "openssh-sftp-server"
 
@@ -61,13 +62,7 @@ IMAGE_INSTALL += "librealsense"
 IMAGE_INSTALL += "librealsense-graphical-examples"
 
 addtask create_link after do_rootfs before do_image
-addtask create_os_version_file after do_rootfs before do_image
 
 do_create_link() {
 	ln -s lib ${WORKDIR}/rootfs/lib64
-}
-
-do_create_os_version_file() {
-	echo "v1.2" > ${WORKDIR}/rootfs/etc/os_version
-	chmod 444 ${WORKDIR}/rootfs/etc/os_version
 }

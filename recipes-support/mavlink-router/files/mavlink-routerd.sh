@@ -18,10 +18,13 @@ start(){
 		>/dev/null &
 }
 stop(){
-	kill `ps | grep -m 1 'mavlink-routerd' | awk '{print $1}'`
+	p=$(pidof mavlink-routerd)
+	if [ -n "$p" ]; then
+		kill $p
+	fi
 }
 status(){
-	ps | grep -m 1 mavlink-routerd
+	ps -ef | grep -m 1 mavlink-routerd
 }
 
 case "$1" in
