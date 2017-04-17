@@ -45,7 +45,7 @@ if [ -n "$(fuser /dev/ttyS1)" ]; then
 
     # try stopping router
     /etc/init.d/mavlink-routerd.sh stop
-    p=$(fuser /dev/ttyS1)
+    p=$(fuser /dev/ttyS1 | tr -d '[:space:]')
     if [ -n "$p" ]; then
         s=$(cat /proc/$p/cmdline | tr -d '[:space:]')
         echo "Process $p ($s) is running and keeping UART busy"
