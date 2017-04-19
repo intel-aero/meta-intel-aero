@@ -1,0 +1,39 @@
+From 2600bad79de91528cb04303565e0f00fced84a09 Mon Sep 17 00:00:00 2001
+From: Johannes Fischer <johannes.fischer@intel.com>
+Date: Wed, 3 Aug 2016 15:50:31 +0200
+Subject: [PATCH] add nm-dhcp-client conf
+
+This file is missing in the NM 0.9.10.2, it is used to allow dhcp operation,
+even dhcp is not active for the WWAN connection. But when permission is missing
+wwan connection does not get up.
+It disappeared by NM 0.9.9.x/NM 0.9.10.x, so just adding again from NM 0.9.8.4.
+There were no major change for the file content while it was contained in NM package.
+
+Signed-off-by: Johannes Fischer <johannes.fischer@intel.com>
+---
+ callouts/nm-dhcp-client.conf | 13 +++++++++++++
+ 1 file changed, 13 insertions(+)
+ create mode 100644 callouts/nm-dhcp-client.conf
+
+diff --git a/callouts/nm-dhcp-client.conf b/callouts/nm-dhcp-client.conf
+new file mode 100644
+index 0000000..25d0eb3
+--- /dev/null
++++ b/callouts/nm-dhcp-client.conf
+@@ -0,0 +1,13 @@
++<!DOCTYPE busconfig PUBLIC
++ "-//freedesktop//DTD D-BUS Bus Configuration 1.0//EN"
++ "http://www.freedesktop.org/standards/dbus/1.0/busconfig.dtd">
++<busconfig>
++        <policy user="root">
++                <allow own="org.freedesktop.nm_dhcp_client"/>
++        </policy>
++        <policy context="default">
++                <deny own="org.freedesktop.nm_dhcp_client"/>
++		<allow send_destination="org.freedesktop.nm_dhcp_client"/>
++        </policy>
++</busconfig>
++
+-- 
+1.9.1
+
