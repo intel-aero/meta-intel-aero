@@ -18,6 +18,9 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				efibootmgr \
 				"
 
+# Allow to change regulatory domain
+IMAGE_INSTALL += "crda"
+
 # Add /etc/os-release
 IMAGE_INSTALL += "os-release"
 
