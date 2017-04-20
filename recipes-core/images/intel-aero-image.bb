@@ -64,6 +64,18 @@ GRUB_TIMEOUT = "3"
 IMAGE_INSTALL += "librealsense"
 IMAGE_INSTALL += "librealsense-graphical-examples"
 
+#connectivity
+IMAGE_INSTALL += "backport-iwlwifi"
+IMAGE_INSTALL += "linux-firmware-iwlwifi-8000c"
+IMAGE_INSTALL += "hostapd"
+IMAGE_INSTALL += "autostart-hostapd"
+IMAGE_INSTALL += "autostart-supplicant"
+
+# LTE MODEM
+IMAGE_INSTALL += "glibc-gconvs glibc-utils glibc-gconv-iso8859-1 modemmanager \
+	opkg opkg-utils rpm icon-naming-utils libtool libndp libnl libinput \
+	libxdmcp networkmanager autostart-modem modem-enable \
+"
 addtask create_link after do_rootfs before do_image
 
 do_create_link() {

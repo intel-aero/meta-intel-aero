@@ -1,0 +1,14 @@
+[Unit]
+Description=Hostapd IEEE 802.11 AP, IEEE 802.1X/WPA/WPA2/EAP/RADIUS Authenticator
+After=network.target
+Requires=ftm-drivers.service
+#After=ftm-drivers.service
+After=wifi-client.service
+
+[Service]
+Type=forking
+PIDFile=/run/hostapd.pid
+ExecStart=@BINDIR@/hostapd @SYSCONFDIR@/hostapd.conf -P /run/hostapd.pid -B -dd
+
+[Install]
+WantedBy=multi-user.target
