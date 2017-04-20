@@ -18,6 +18,9 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				efibootmgr \
 				"
 
+# Handle power button through ACPI
+IMAGE_INSTALL += "eee-acpi-scripts"
+
 # Add /etc/os-release
 IMAGE_INSTALL += "os-release"
 
