@@ -4,24 +4,13 @@ SRCREV_machine_intel-aero ?= "2cc78e92f40522d8b5f278b7099c1ae657947749"
 COMPATIBLE_MACHINE_intel-aero = "intel-aero"
 LINUX_VERSION_intel-aero = "4.4.60"
 
+KERNEL_EXTRA_FEATURES = ""
 FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
 
+SRC_URI = "git://git.yoctoproject.org/linux-yocto-4.4.git;name=machine;branch=${KBRANCH};"
+
 # List of configs to enable in kernel .config
-SRC_URI += "file://lpss.cfg \
-			file://mmc.cfg \
-			file://pinctrl.cfg \
-			file://debug.cfg \
-			file://socdts.cfg \
-			file://dma.cfg \
-			file://drone-code.cfg \
-			file://acmmbim.cfg \
-			file://nat.cfg \
-			file://spi.cfg \
-			file://usbotg.cfg \
-			file://regulator.cfg \
-			file://camera.cfg \
-			file://wdt.cfg \
-			"
+SRC_URI += "file://defconfig"
 
 # List of binary files
 SRC_URI += "file://shisp_2401a0_v21.bin \
@@ -54,6 +43,7 @@ SRC_URI += " \
 	file://0025-intel-mid-split-keyboard-gpio-SFI-implementation-fro.patch \
 	file://0026-input-soc_button_array-add-debounce-parameter-to-the.patch \
 	file://0027-acpi-Workaround-for-not-registering-CAN-controller.patch \
+	file://0028-Temporarily-remove-BXT-PMIC-driver.patch \
 	"
 
 # SRC_URI += " \
