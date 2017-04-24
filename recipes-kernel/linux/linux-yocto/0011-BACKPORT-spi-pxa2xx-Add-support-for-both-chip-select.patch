@@ -1,0 +1,114 @@
+From b644270948e8eed982d64fd99e59f22e5cc5d861 Mon Sep 17 00:00:00 2001
+From: Mika Westerberg <mika.westerberg@linux.intel.com>
+Date: Mon, 8 Feb 2016 17:14:31 +0200
+Subject: [PATCH 11/27] BACKPORT: spi: pxa2xx: Add support for both chip
+ selects on Intel Braswell
+
+commit 30f3a6ab44d8d06bb3d94f6320e4aa76df59d025 upstream.
+
+Intel Braswell LPSS SPI controller actually has two chip selects and there
+is no capabilities register where this could be found out. These two chip
+selects are controlled by bits which are in slightly differrent location
+than Broxton has.
+
+Braswell Windows driver also starts chip select (ACPI DeviceSelection)
+numbering from 1 so translate it to be suitable for Linux as well.
+
+Signed-off-by: Mika Westerberg <mika.westerberg@linux.intel.com>
+Reviewed-by: Jarkko Nikula <jarkko.nikula@linux.intel.com>
+Reviewed-by: Andy Shevchenko <andy.shevchenko@gmail.com>
+Signed-off-by: Mark Brown <broonie@kernel.org>
+---
+ drivers/spi/spi-pxa2xx.c   | 21 ++++++++++++++++++++-
+ include/linux/pxa2xx_ssp.h |  1 +
+ 2 files changed, 21 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/spi/spi-pxa2xx.c b/drivers/spi/spi-pxa2xx.c
+index 4f7b909..4a2f741 100644
+--- a/drivers/spi/spi-pxa2xx.c
++++ b/drivers/spi/spi-pxa2xx.c
+@@ -83,6 +83,7 @@ struct lpss_config {
+ 	/* Chip select control */
+ 	unsigned cs_sel_shift;
+ 	unsigned cs_sel_mask;
++	unsigned cs_num;
+ };
+ 
+ /* Keep these sorted with enum pxa_ssp_type */
+@@ -107,6 +108,19 @@ static const struct lpss_config lpss_platforms[] = {
+ 		.tx_threshold_lo = 160,
+ 		.tx_threshold_hi = 224,
+ 	},
++	{	/* LPSS_BSW_SSP */
++		.offset = 0x400,
++		.reg_general = 0x08,
++		.reg_ssp = 0x0c,
++		.reg_cs_ctrl = 0x18,
++		.reg_capabilities = -1,
++		.rx_threshold = 64,
++		.tx_threshold_lo = 160,
++		.tx_threshold_hi = 224,
++		.cs_sel_shift = 2,
++		.cs_sel_mask = 1 << 2,
++		.cs_num = 2,
++	},
+ 	{	/* LPSS_SPT_SSP */
+ 		.offset = 0x200,
+ 		.reg_general = -1,
+@@ -142,6 +156,7 @@ static bool is_lpss_ssp(const struct driver_data *drv_data)
+ 	switch (drv_data->ssp_type) {
+ 	case LPSS_LPT_SSP:
+ 	case LPSS_BYT_SSP:
++	case LPSS_BSW_SSP:
+ 	case LPSS_SPT_SSP:
+ 	case LPSS_BXT_SSP:
+ 		return true;
+@@ -1196,6 +1211,7 @@ static int setup(struct spi_device *spi)
+ 		break;
+ 	case LPSS_LPT_SSP:
+ 	case LPSS_BYT_SSP:
++	case LPSS_BSW_SSP:
+ 	case LPSS_SPT_SSP:
+ 	case LPSS_BXT_SSP:
+ 		config = lpss_get_config(drv_data);
+@@ -1343,7 +1359,7 @@ static const struct acpi_device_id pxa2xx_spi_acpi_match[] = {
+ 	{ "INT3430", LPSS_LPT_SSP },
+ 	{ "INT3431", LPSS_LPT_SSP },
+ 	{ "80860F0E", LPSS_BYT_SSP },
+-	{ "8086228E", LPSS_BYT_SSP },
++	{ "8086228E", LPSS_BSW_SSP },
+ 	{ },
+ };
+ MODULE_DEVICE_TABLE(acpi, pxa2xx_spi_acpi_match);
+@@ -1484,6 +1500,7 @@ static int pxa2xx_spi_fw_translate_cs(struct spi_master *master, unsigned cs)
+ 		 * to match what Linux expects.
+ 		 */
+ 		case LPSS_BYT_SSP:
++		case LPSS_BSW_SSP:
+ 			return cs - 1;
+ 
+ 		default:
+@@ -1636,6 +1653,8 @@ static int pxa2xx_spi_probe(struct platform_device *pdev)
+ 			tmp &= LPSS_CAPS_CS_EN_MASK;
+ 			tmp >>= LPSS_CAPS_CS_EN_SHIFT;
+ 			platform_info->num_chipselect = ffz(tmp);
++		} else if (config->cs_num) {
++			platform_info->num_chipselect = config->cs_num;
+ 		}
+ 	}
+ 	master->num_chipselect = platform_info->num_chipselect;
+diff --git a/include/linux/pxa2xx_ssp.h b/include/linux/pxa2xx_ssp.h
+index c2f2574..2a097d1 100644
+--- a/include/linux/pxa2xx_ssp.h
++++ b/include/linux/pxa2xx_ssp.h
+@@ -197,6 +197,7 @@ enum pxa_ssp_type {
+ 	QUARK_X1000_SSP,
+ 	LPSS_LPT_SSP, /* Keep LPSS types sorted with lpss_platforms[] */
+ 	LPSS_BYT_SSP,
++	LPSS_BSW_SSP,
+ 	LPSS_SPT_SSP,
+ 	LPSS_BXT_SSP,
+ };
+-- 
+2.9.3
+
