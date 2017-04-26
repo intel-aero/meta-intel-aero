@@ -18,6 +18,9 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				efibootmgr \
 				"
 
+# Allow to easily copy files to/from host
+IMAGE_INSTALL += "rsync"
+
 # Handle power button through ACPI
 IMAGE_INSTALL += "eee-acpi-scripts"
 
