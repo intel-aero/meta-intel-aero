@@ -73,7 +73,7 @@ IMAGE_INSTALL += "autostart-supplicant"
 
 # LTE MODEM
 IMAGE_INSTALL += "glibc-gconvs glibc-utils glibc-gconv-iso8859-1 modemmanager \
-	opkg opkg-utils rpm icon-naming-utils libtool libndp libnl libinput \
+	rpm icon-naming-utils libtool libndp libnl libinput \
 	libxdmcp networkmanager autostart-modem modem-enable \
 "
 addtask create_link after do_rootfs before do_image
