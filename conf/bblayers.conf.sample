@@ -13,8 +13,8 @@ BBLAYERS ?= " \
   ##OEROOT##/meta-qt5 \
   ##OEROOT##/meta-uav \
   ##OEROOT##/meta-ros \
-  ##OEROOT##/meta-intel-aero \
   ##OEROOT##/meta-intel-realsense \
+  ##OEROOT##/meta-intel-aero \
   ##OEROOT##/meta-openembedded/meta-oe \
   ##OEROOT##/meta-openembedded/meta-python \
   ##OEROOT##/meta-openembedded/meta-networking \
