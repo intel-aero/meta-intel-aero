@@ -1,0 +1,73 @@
+From 4f675949df7690669bd1fe4044b0f84c234116e5 Mon Sep 17 00:00:00 2001
+From: Lucas De Marchi <lucas.demarchi@intel.com>
+Date: Thu, 20 Apr 2017 20:59:41 -0700
+Subject: [PATCH 05/27] dma: dw: must initialize dma channel in each
+ transaction
+
+CHT enable Autonomous D3 for LPSS DMA. When idle, DMA will power gated
+and reset without driver knowledge, So need to initialize in each dma
+transaction.
+
+Signed-off-by: Huiquan Zhong <huiquan.zhong@intel.com>
+---
+ drivers/dma/dw/core.c | 10 ----------
+ drivers/dma/dw/regs.h |  1 -
+ 2 files changed, 11 deletions(-)
+
+diff --git a/drivers/dma/dw/core.c b/drivers/dma/dw/core.c
+index c66133b..a7ece13 100644
+--- a/drivers/dma/dw/core.c
++++ b/drivers/dma/dw/core.c
+@@ -133,9 +133,6 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
+ 	u32 cfghi = DWC_CFGH_FIFO_MODE;
+ 	u32 cfglo = DWC_CFGL_CH_PRIOR(dwc->priority);
+ 
+-	if (dwc->initialized == true)
+-		return;
+-
+ 	cfghi |= DWC_CFGH_DST_PER(dwc->dst_id);
+ 	cfghi |= DWC_CFGH_SRC_PER(dwc->src_id);
+ 
+@@ -145,8 +142,6 @@ static void dwc_initialize(struct dw_dma_chan *dwc)
+ 	/* Enable interrupts */
+ 	channel_set_bit(dw, MASK.XFER, dwc->mask);
+ 	channel_set_bit(dw, MASK.ERROR, dwc->mask);
+-
+-	dwc->initialized = true;
+ }
+ 
+ /*----------------------------------------------------------------------*/
+@@ -1114,9 +1109,6 @@ static void dw_dma_off(struct dw_dma *dw)
+ 
+ 	while (dma_readl(dw, CFG) & DW_CFG_DMA_EN)
+ 		cpu_relax();
+-
+-	for (i = 0; i < dw->dma.chancnt; i++)
+-		dw->chan[i].initialized = false;
+ }
+ 
+ static void dw_dma_on(struct dw_dma *dw)
+@@ -1225,8 +1217,6 @@ static void dwc_free_chan_resources(struct dma_chan *chan)
+ 	dwc->src_master = 0;
+ 	dwc->dst_master = 0;
+ 
+-	dwc->initialized = false;
+-
+ 	/* Disable interrupts */
+ 	channel_clear_bit(dw, MASK.XFER, dwc->mask);
+ 	channel_clear_bit(dw, MASK.BLOCK, dwc->mask);
+diff --git a/drivers/dma/dw/regs.h b/drivers/dma/dw/regs.h
+index 241ff2b..4a20d3b 100644
+--- a/drivers/dma/dw/regs.h
++++ b/drivers/dma/dw/regs.h
+@@ -225,7 +225,6 @@ struct dw_dma_chan {
+ 	u8				priority;
+ 	enum dma_transfer_direction	direction;
+ 	bool				paused;
+-	bool				initialized;
+ 
+ 	/* software emulation of the LLP transfers */
+ 	struct list_head	*tx_node_active;
+-- 
+2.9.3
+

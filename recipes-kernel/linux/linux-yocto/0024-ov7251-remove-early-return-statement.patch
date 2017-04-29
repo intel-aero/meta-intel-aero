@@ -1,0 +1,29 @@
+From 3871c788a55333e43529b7b9e97acc892a32325b Mon Sep 17 00:00:00 2001
+From: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
+Date: Thu, 20 Oct 2016 17:26:53 -0700
+Subject: [PATCH 24/27] ov7251: remove early return statement
+
+Remove an early return that prevents mid_atomisp framework
+to control the regulators for camera sensor.
+
+Signed-off-by: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
+---
+ drivers/media/i2c/ov7251.c | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/drivers/media/i2c/ov7251.c b/drivers/media/i2c/ov7251.c
+index 4547bc9..9e9c1d9 100644
+--- a/drivers/media/i2c/ov7251.c
++++ b/drivers/media/i2c/ov7251.c
+@@ -804,8 +804,6 @@ static int power_ctrl(struct v4l2_subdev *sd, bool flag)
+ 	if (!dev || !dev->platform_data)
+ 		return -ENODEV;
+ 
+-	return 0;
+-
+ 	/* Non-gmin platforms use the legacy callback */
+ 	if (dev->platform_data->power_ctrl)
+ 		return dev->platform_data->power_ctrl(sd, flag);
+-- 
+2.9.3
+

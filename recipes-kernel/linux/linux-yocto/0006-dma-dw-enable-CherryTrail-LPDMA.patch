@@ -1,0 +1,45 @@
+From 36ecfe8f34cb764f84b3db688e2acfc4d844c341 Mon Sep 17 00:00:00 2001
+From: Huiquan Zhong <huiquan.zhong@intel.com>
+Date: Sat, 18 Oct 2014 00:44:10 +0800
+Subject: [PATCH 06/27] dma: dw: enable CherryTrail LPDMA
+
+Add CherryTrail's LPDMA ACPI ID(80862286, 808622C0) to the
+mapping table.
+
+Signed-off-by: Huiquan Zhong <huiquan.zhong@intel.com>
+---
+ drivers/acpi/acpi_lpss.c  | 4 ++++
+ drivers/dma/dw/platform.c | 2 ++
+ 2 files changed, 6 insertions(+)
+
+diff --git a/drivers/acpi/acpi_lpss.c b/drivers/acpi/acpi_lpss.c
+index f9e0d09..4681864 100644
+--- a/drivers/acpi/acpi_lpss.c
++++ b/drivers/acpi/acpi_lpss.c
+@@ -232,6 +232,10 @@ static const struct acpi_device_id acpi_lpss_device_ids[] = {
+ 	{ "INT33B2", },
+ 	{ "INT33FC", },
+ 
++	/* Cherrytrail LPSS devices */
++	{ "80862286", LPSS_ADDR(lpss_dma_desc) },
++	{ "808622C0", LPSS_ADDR(lpss_dma_desc) },
++
+ 	/* Braswell LPSS devices */
+ 	{ "80862288", LPSS_ADDR(bsw_pwm_dev_desc) },
+ 	{ "8086228A", LPSS_ADDR(bsw_uart_dev_desc) },
+diff --git a/drivers/dma/dw/platform.c b/drivers/dma/dw/platform.c
+index d3f6726..8e6eb91 100644
+--- a/drivers/dma/dw/platform.c
++++ b/drivers/dma/dw/platform.c
+@@ -269,6 +269,8 @@ static struct dw_dma_platform_data dw_dma_acpi_pdata = {
+ 
+ static const struct acpi_device_id dw_dma_acpi_id_table[] = {
+ 	{ "INTL9C60", (kernel_ulong_t)&dw_dma_acpi_pdata },
++	{ "80862286", (kernel_ulong_t)&dw_dma_acpi_pdata},
++	{ "808622C0", (kernel_ulong_t)&dw_dma_acpi_pdata},
+ 	{ }
+ };
+ MODULE_DEVICE_TABLE(acpi, dw_dma_acpi_id_table);
+-- 
+2.9.3
+

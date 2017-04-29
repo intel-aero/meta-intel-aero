@@ -1,0 +1,25 @@
+From 56d195deaf85917e6a7c7b44d87f1f87321eebc5 Mon Sep 17 00:00:00 2001
+From: Venkat Jayaraman <venkat.jayaraman@intel.com>
+Date: Fri, 29 Jul 2016 13:40:26 -0700
+Subject: [PATCH 02/27] media: Add support for RW10 pixel format detection
+
+Signed-off-by: Venkat Jayaraman <venkat.jayaraman@intel.com>
+---
+ drivers/media/v4l2-core/v4l2-ioctl.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/media/v4l2-core/v4l2-ioctl.c b/drivers/media/v4l2-core/v4l2-ioctl.c
+index 7486af2..7c975ba 100644
+--- a/drivers/media/v4l2-core/v4l2-ioctl.c
++++ b/drivers/media/v4l2-core/v4l2-ioctl.c
+@@ -1267,6 +1267,7 @@ static void v4l_fill_fmtdesc(struct v4l2_fmtdesc *fmt)
+ 		case V4L2_PIX_FMT_OV518:	descr = "GSPCA OV518"; break;
+ 		case V4L2_PIX_FMT_JPGL:		descr = "JPEG Lite"; break;
+ 		case V4L2_PIX_FMT_SE401:	descr = "GSPCA SE401"; break;
++		case V4L2_PIX_FMT_RW10:		descr = "Raw data 10-bit (RW10)"; break;
+ 		case V4L2_PIX_FMT_S5C_UYVY_JPG:	descr = "S5C73MX interleaved UYVY/JPEG"; break;
+ 		default:
+ 			WARN(1, "Unknown pixelformat 0x%08x\n", fmt->pixelformat);
+-- 
+2.9.3
+

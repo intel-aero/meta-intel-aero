@@ -1,0 +1,150 @@
+From 0d6c17e2f2e6f42a1b280468279fadb4ed7825d3 Mon Sep 17 00:00:00 2001
+From: Lucas De Marchi <lucas.demarchi@intel.com>
+Date: Fri, 17 Feb 2017 10:46:31 -0800
+Subject: [PATCH 18/27] atomisp: Fixups to build with gcc >= 6
+
+Some were real bugs, including not waiting for door bell, marking config
+as always changed, etc.
+
+Signed-off-by: Lucas De Marchi <lucas.demarchi@intel.com>
+---
+ .../intel-mid/device_libs/platform_vlv2_plat_clk.c       |  2 +-
+ arch/x86/platform/intel-mid/intel_mid_atomisp.c          | 16 +++++++++-------
+ .../pci/atomisp/atomisp_driver/atomisp_compat_ioctl32.c  |  4 ++--
+ drivers/media/pci/atomisp/atomisp_driver/atomisp_ioctl.c | 10 +++++-----
+ drivers/media/pci/atomisp/atomisp_driver/atomisp_v4l2.c  | 14 +++++++-------
+ drivers/media/pci/atomisp/css/sh_css_params.c            |  3 ++-
+ 6 files changed, 26 insertions(+), 23 deletions(-)
+
+diff --git a/arch/x86/platform/intel-mid/device_libs/platform_vlv2_plat_clk.c b/arch/x86/platform/intel-mid/device_libs/platform_vlv2_plat_clk.c
+index 56f21d5..e22094f 100644
+--- a/arch/x86/platform/intel-mid/device_libs/platform_vlv2_plat_clk.c
++++ b/arch/x86/platform/intel-mid/device_libs/platform_vlv2_plat_clk.c
+@@ -26,7 +26,7 @@ static int __init vlv2_plat_clk_init(void)
+ 	pdev = platform_device_register_simple("vlv2_plat_clk", -1, NULL, 0);
+ 	if (IS_ERR(pdev)) {
+ 		pr_err("platform_vlv2_plat_clk:register failed: %p\n",
+-			PTR_ERR(pdev));
++			pdev);
+ 		return PTR_ERR(pdev);
+ 	}
+ 
+diff --git a/arch/x86/platform/intel-mid/intel_mid_atomisp.c b/arch/x86/platform/intel-mid/intel_mid_atomisp.c
+index 59a3afb..e969c27 100644
+--- a/arch/x86/platform/intel-mid/intel_mid_atomisp.c
++++ b/arch/x86/platform/intel-mid/intel_mid_atomisp.c
+@@ -767,13 +767,13 @@ int gmin_get_config_var(struct device *dev, const char *var, char *out, size_t *
+ 	int i, j, ret;
+ 	unsigned long efilen;
+ 
+-    if (dev && ACPI_COMPANION(dev))
+-        dev = &ACPI_COMPANION(dev)->dev;
++	if (dev && ACPI_COMPANION(dev))
++		dev = &ACPI_COMPANION(dev)->dev;
+ 
+-    if (dev)
+-        ret = snprintf(var8, sizeof(var8), "%s_%s", dev_name(dev), var);
+-    else
+-        ret = snprintf(var8, sizeof(var8), "gmin_%s", var);
++	if (dev)
++		ret = snprintf(var8, sizeof(var8), "%s_%s", dev_name(dev), var);
++	else
++		ret = snprintf(var8, sizeof(var8), "gmin_%s", var);
+ 
+ 	if (ret < 0 || ret >= sizeof(var8)-1)
+ 		return -EINVAL;
+@@ -902,8 +902,10 @@ int gmin_get_var_int(struct device *dev, const char *var, int def)
+ 
+ 	ret = gmin_get_config_var(dev, var, val, &len);
+ 	if (!ret) {
++		long result_long;
+ 		val[len] = 0;
+-		ret = kstrtol(val, 0, &result);
++		ret = kstrtol(val, 0, &result_long);
++		result = result_long;
+ 	} else {
+ 		/* Try ACPI Scan */
+ 		ret = gmin_acpi_get_config_var(dev, var, &result);
+diff --git a/drivers/media/pci/atomisp/atomisp_driver/atomisp_compat_ioctl32.c b/drivers/media/pci/atomisp/atomisp_driver/atomisp_compat_ioctl32.c
+index 65fbcb6..375100e 100644
+--- a/drivers/media/pci/atomisp/atomisp_driver/atomisp_compat_ioctl32.c
++++ b/drivers/media/pci/atomisp/atomisp_driver/atomisp_compat_ioctl32.c
+@@ -83,8 +83,8 @@ static int get_v4l2_framebuffer32(struct v4l2_framebuffer *kp,
+ 
+ 	kp->base = compat_ptr(tmp);
+ 	/*get_v4l2_pix_format(&kp->fmt, &up->fmt); */
+-    if (copy_from_user(&kp->fmt, &up->fmt, sizeof(up->fmt)))
+-        return -EFAULT;
++	if (copy_from_user(&kp->fmt, &up->fmt, sizeof(up->fmt)))
++		return -EFAULT;
+ 	return 0;
+ }
+ 
+diff --git a/drivers/media/pci/atomisp/atomisp_driver/atomisp_ioctl.c b/drivers/media/pci/atomisp/atomisp_driver/atomisp_ioctl.c
+index 8ee6e52..9d1ac9b 100644
+--- a/drivers/media/pci/atomisp/atomisp_driver/atomisp_ioctl.c
++++ b/drivers/media/pci/atomisp/atomisp_driver/atomisp_ioctl.c
+@@ -569,13 +569,13 @@ static int atomisp_querycap(struct file *file, void *fh,
+ 
+ 	cap->version = VERSION;
+ 
+-    if (video->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
+-        cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
+-    else
+-        cap->device_caps = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
++	if (video->type == V4L2_BUF_TYPE_VIDEO_CAPTURE)
++		cap->device_caps = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING;
++	else
++		cap->device_caps = V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_STREAMING;
+ 
+ 	cap->capabilities = V4L2_CAP_VIDEO_CAPTURE | V4L2_CAP_STREAMING |
+-        V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_DEVICE_CAPS;
++			    V4L2_CAP_VIDEO_OUTPUT | V4L2_CAP_DEVICE_CAPS;
+ 
+ 	return ret;
+ }
+diff --git a/drivers/media/pci/atomisp/atomisp_driver/atomisp_v4l2.c b/drivers/media/pci/atomisp/atomisp_driver/atomisp_v4l2.c
+index 297400c..8e678c6 100644
+--- a/drivers/media/pci/atomisp/atomisp_driver/atomisp_v4l2.c
++++ b/drivers/media/pci/atomisp/atomisp_driver/atomisp_v4l2.c
+@@ -414,14 +414,14 @@ void punit_ddr_dvfs_enable(bool enable)
+ 	intel_mid_msgbus_write32(PUNIT_PORT, MRFLD_ISPSSDVFS, reg);
+ 
+ 	/*Check Req_ACK to see freq status, wait until door_bell is cleared*/
+-	if (reg & door_bell) {
+-		while (max_wait--) {
+-			if (0 == (intel_mid_msgbus_read32(PUNIT_PORT,
+-				MRFLD_ISPSSDVFS) & door_bell));
+-				break;
++	if (!(reg & door_bell))
++		return;
+ 
+-			usleep_range(100, 500);
+-		}
++	while (max_wait--) {
++		reg = intel_mid_msgbus_read32(PUNIT_PORT, MRFLD_ISPSSDVFS);
++		if (!(reg & door_bell))
++			break;
++		usleep_range(100, 500);
+ 	}
+ 
+ 	if (max_wait == 0)
+diff --git a/drivers/media/pci/atomisp/css/sh_css_params.c b/drivers/media/pci/atomisp/css/sh_css_params.c
+index f71c1ad..55506bf 100644
+--- a/drivers/media/pci/atomisp/css/sh_css_params.c
++++ b/drivers/media/pci/atomisp/css/sh_css_params.c
+@@ -4943,9 +4943,10 @@ sh_css_invalidate_params(struct ia_css_stream *stream)
+ 
+ 	/*Free up theDVS table memory blocks before recomputing new table  */
+ 	for (i = 0; i < IA_CSS_PIPE_ID_NUM; i++) {
+-		if (params->pipe_dvs_6axis_config[i])
++		if (params->pipe_dvs_6axis_config[i]) {
+ 			free_dvs_6axis_table(&(params->pipe_dvs_6axis_config[i]));
+ 			params->pipe_dvs_6axis_config_changed[i] = true;
++		}
+ 	}
+ 
+ 	IA_CSS_LEAVE_PRIVATE("void");
+-- 
+2.9.3
+

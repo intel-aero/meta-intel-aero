@@ -1,0 +1,56 @@
+From 2b9c725a3e679f4cc262f9d5deb71d16c2de5b34 Mon Sep 17 00:00:00 2001
+From: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
+Date: Wed, 12 Oct 2016 14:21:57 -0700
+Subject: [PATCH 26/27] input: soc_button_array: add debounce parameter to the
+ button array
+
+Make use of the debounce feature from the gpio-keys driver. Debounce
+array is taken from platform_gpio_keys (intel-mid) to keep consistency.
+
+These can be extended to be configurable by ACPI or dts, if implemented.
+
+Signed-off-by: Omar Ramirez Luna <omar.r.ramirez.luna@intel.com>
+---
+ drivers/input/misc/soc_button_array.c | 12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/input/misc/soc_button_array.c b/drivers/input/misc/soc_button_array.c
+index c14b827..a2fa7a2 100644
+--- a/drivers/input/misc/soc_button_array.c
++++ b/drivers/input/misc/soc_button_array.c
+@@ -33,6 +33,7 @@ struct soc_button_info {
+ 	unsigned int event_code;
+ 	bool autorepeat;
+ 	bool wakeup;
++	int debounce;
+ };
+ 
+ /*
+@@ -101,6 +102,7 @@ soc_button_device_create(struct platform_device *pdev,
+ 		gpio_keys[n_buttons].active_low = 1;
+ 		gpio_keys[n_buttons].desc = info->name;
+ 		gpio_keys[n_buttons].wakeup = info->wakeup;
++		gpio_keys[n_buttons].debounce_interval = info->debounce;
+ 		n_buttons++;
+ 	}
+ 
+@@ -193,11 +195,11 @@ static int soc_button_probe(struct platform_device *pdev)
+ }
+ 
+ static struct soc_button_info soc_button_PNP0C40[] = {
+-	{ "power", 0, EV_KEY, KEY_POWER, false, true },
+-	{ "home", 1, EV_KEY, KEY_LEFTMETA, false, true },
+-	{ "volume_up", 2, EV_KEY, KEY_VOLUMEUP, true, false },
+-	{ "volume_down", 3, EV_KEY, KEY_VOLUMEDOWN, true, false },
+-	{ "rotation_lock", 4, EV_SW, SW_ROTATE_LOCK, false, false },
++	{ "power", 0, EV_KEY, KEY_POWER, false, true, 3000 },
++	{ "home", 1, EV_KEY, KEY_LEFTMETA, false, true, 20 },
++	{ "volume_up", 2, EV_KEY, KEY_VOLUMEUP, true, false, 20 },
++	{ "volume_down", 3, EV_KEY, KEY_VOLUMEDOWN, true, false, 20 },
++	{ "rotation_lock", 4, EV_SW, SW_ROTATE_LOCK, false, false, 20 },
+ 	{ }
+ };
+ 
+-- 
+2.9.3
+
