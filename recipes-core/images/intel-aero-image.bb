@@ -16,6 +16,7 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				px4-fw \
 				mavlink-router \
 				efibootmgr \
+				camera-streaming-daemon \
 				"
 
 # Allow to easily copy files to/from host
@@ -31,9 +32,6 @@ IMAGE_INSTALL += "openssh-sftp-server"
 
 # increase entropy right after boot so hostapd succeeds authentication
 IMAGE_INSTALL += "rng-tools"
-
-#Camera Streaming Daemon support
-IMAGE_INSTALL += "libavahi-client libavahi-glib"
 
 # Build tools
 IMAGE_INSTALL += "packagegroup-core-buildessential"
