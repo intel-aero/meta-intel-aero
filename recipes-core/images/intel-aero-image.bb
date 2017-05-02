@@ -38,6 +38,9 @@ IMAGE_INSTALL += "libavahi-client libavahi-glib"
 # Build tools
 IMAGE_INSTALL += "packagegroup-core-buildessential"
 
+# Development/Debug tools
+IMAGE_INSTALL += "valgrind"
+
 # Tests applications
 IMAGE_INSTALL += "packagegroup-core-tools"
 
