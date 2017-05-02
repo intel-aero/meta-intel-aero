@@ -12,14 +12,21 @@
 . /etc/init.d/functions
 
 # Functions to do individual actions
-start(){
-	 /usr/bin/csd &
+start() {
+	 nohup /usr/bin/csd \
+		2>/var/log/csd.log \
+		>/dev/null &
 }
-stop(){
-	kill `ps | grep -m 1 'csd' | awk '{print $1}'`
+
+stop() {
+	p=$(pidof csd)
+	if [ -n "$p" ]; then
+		kill $p
+	fi
 }
+
 status(){
-	ps | grep -m 1 camera-streaming-daemon
+	ps -ef | grep -m 1 csd
 }
 
 case "$1" in
@@ -37,7 +44,7 @@ case "$1" in
 	status
 	;;
   *)
-	echo "Usage: csd.sh { start | stop | status | restart }" >&2
+	echo "Usage: csd { start | stop | status | restart }" >&2
 	exit 1
 	;;
 esac
