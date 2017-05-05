@@ -1,4 +1,0 @@
-#!/bin/sh
-modem_off
-sleep 1
-modem_on
