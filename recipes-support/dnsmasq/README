@@ -1,2 +1,0 @@
-this is copied here to avoid to add the layer meta-openenbedded/meta-networking to all bblayer.conf
-original location is /poky/meta-openembedded/meta-oe/meta-networking/recipes-support/dnsmasq
