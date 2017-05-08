@@ -66,11 +66,6 @@ IMAGE_INSTALL += "autostart-supplicant"
 APPEND += "console=ttyS0,115200n8 console=tty1"
 GRUB_TIMEOUT = "3"
 
-# LTE MODEM
-IMAGE_INSTALL += "glibc-gconvs glibc-utils glibc-gconv-iso8859-1 modemmanager \
-	rpm icon-naming-utils libtool libndp libnl libinput \
-	libxdmcp networkmanager autostart-modem modem-enable \
-"
 addtask create_link after do_rootfs before do_image
 
 do_create_link() {
