@@ -48,21 +48,8 @@ IMAGE_INSTALL += "packagegroup-airmap"
 # OpenCV
 IMAGE_INSTALL += "opencv"
 
-# Dronekit
-IMAGE_INSTALL_append = " dronekit-python"
-
-# MavROS
-IMAGE_INSTALL_append = " mavros realsense-camera"
-
-# Enable ros comm packagegroup
-IMAGE_INSTALL_append = " packagegroup-ros-comm"
-
 # PX4
 IMAGE_INSTALL_append = " packagegroup-px4"
-
-# Platform configurations
-APPEND += "console=ttyS0,115200n8 console=tty1"
-GRUB_TIMEOUT = "3"
 
 # librealsense
 IMAGE_INSTALL += "librealsense"
@@ -74,6 +61,10 @@ IMAGE_INSTALL += "linux-firmware-iwlwifi-8000c"
 IMAGE_INSTALL += "hostapd"
 IMAGE_INSTALL += "autostart-hostapd"
 IMAGE_INSTALL += "autostart-supplicant"
+
+# Platform configurations
+APPEND += "console=ttyS0,115200n8 console=tty1"
+GRUB_TIMEOUT = "3"
 
 # LTE MODEM
 IMAGE_INSTALL += "glibc-gconvs glibc-utils glibc-gconv-iso8859-1 modemmanager \
