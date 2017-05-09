@@ -7,6 +7,7 @@ PR = "r0"
 
 RDEPENDS_${PN} = "\
 		python-cryptography \
-		airmap \
+		AirMapSDK-Embedded \
 		python-paho-mqtt \
+		python-requests \
 		"
