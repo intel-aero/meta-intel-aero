@@ -55,8 +55,7 @@ IMAGE_INSTALL_append = " packagegroup-px4"
 IMAGE_INSTALL += "librealsense"
 IMAGE_INSTALL += "librealsense-graphical-examples"
 
-#connectivity
-IMAGE_INSTALL += "backport-iwlwifi"
+# connectivity
 IMAGE_INSTALL += "linux-firmware-iwlwifi-8000c"
 IMAGE_INSTALL += "hostapd"
 IMAGE_INSTALL += "autostart-hostapd"
