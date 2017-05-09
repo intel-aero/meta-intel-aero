@@ -11,19 +11,14 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				gstreamer1.0-plugins-bad \
 				gstreamer1.0-meta-base gstreamer1.0-rtsp-server \
 				jam-stapl \
-				aero-watchdog \
-				aero-utils \
 				px4-fw \
-				mavlink-router \
-				efibootmgr \
-				camera-streaming-daemon \
 				"
+
+IMAGE_INSTALL += "camera-streaming-daemon"
+IMAGE_INSTALL += "mavlink-router"
 
 # Allow to easily copy files to/from host
 IMAGE_INSTALL += "rsync"
-
-# Handle power button through ACPI
-IMAGE_INSTALL += "eee-acpi-scripts"
 
 # Add /etc/os-release
 IMAGE_INSTALL += "os-release"
@@ -56,14 +51,9 @@ IMAGE_INSTALL += "librealsense"
 IMAGE_INSTALL += "librealsense-graphical-examples"
 
 # connectivity
-IMAGE_INSTALL += "linux-firmware-iwlwifi-8000c"
 IMAGE_INSTALL += "hostapd"
 IMAGE_INSTALL += "autostart-hostapd"
 IMAGE_INSTALL += "autostart-supplicant"
-
-# Platform configurations
-APPEND += "console=ttyS0,115200n8 console=tty1"
-GRUB_TIMEOUT = "3"
 
 addtask create_link after do_rootfs before do_image
 
