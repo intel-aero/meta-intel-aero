@@ -49,7 +49,7 @@ IMAGE_INSTALL += "packagegroup-airmap"
 IMAGE_INSTALL += "opencv"
 
 # PX4
-IMAGE_INSTALL_append = " packagegroup-px4"
+IMAGE_INSTALL += "packagegroup-px4"
 
 # librealsense
 IMAGE_INSTALL += "librealsense"
