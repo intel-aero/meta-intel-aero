@@ -1,24 +1,34 @@
 DESCRIPTION = "Camera Streaming Daemon is a software daemon to handle video streaming for drones in general"
-DEPENDS = "avahi gstreamer1.0 gstreamer1.0-rtsp-server glib-2.0"
+DEPENDS = "avahi gstreamer1.0 gstreamer1.0-rtsp-server glib-2.0 python python-future"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=93888867ace35ffec2c845ea90b2e16b"
 
-SRCREV = "d2451ab9b52e4e035b387fe18ab864b7ae66e938"
+SRCREV = "a6dae306ac319b5b3cd141e1aac8b5e43c0f965e"
 SRC_URI = "gitsm://git@github.com/01org/camera-streaming-daemon.git;protocol=https;branch=master"
 SRC_URI += "file://csd"
 SRC_URI += "file://main.conf"
 
 S = "${WORKDIR}/git"
 
-inherit autotools pkgconfig update-rc.d
+inherit autotools pythonnative pkgconfig update-rc.d systemd
 
-INITSCRIPT_PARAMS = "start 72 2 3 4 5 . stop 72 0 1 6 ."
-INITSCRIPT_NAME = "csd"
+PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}"
+PACKAGECONFIG[systemd] = "--enable-systemd --with-systemdsystemunitdir=${systemd_unitdir}/system/,--disable-systemd"
+
+do_compile_prepend () {
+    export PYTHONPATH="${PKG_CONFIG_SYSROOT_DIR}/usr/lib/python2.7/site-packages/"
+}
 
 do_install_append () {
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'true', 'false', d)}; then
 	install -d ${D}${sysconfdir}/init.d
 	install -m 0755 ${WORKDIR}/csd ${D}${sysconfdir}/init.d
+    fi
 
-	install -d ${D}${sysconfdir}/csd/
-	install -m 0644 ${WORKDIR}/main.conf ${D}${sysconfdir}/csd/
+    install -d ${D}${sysconfdir}/csd/
+    install -m 0644 ${WORKDIR}/main.conf ${D}${sysconfdir}/csd/
 }
+
+SYSTEMD_SERVICE_${PN} = "csd.service"
+INITSCRIPT_NAME = "csd"
+INITSCRIPT_PARAMS = "defaults 72"
