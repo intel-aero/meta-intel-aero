@@ -55,8 +55,6 @@ IMAGE_INSTALL += "librealsense-graphical-examples"
 
 # connectivity
 IMAGE_INSTALL += "hostapd"
-IMAGE_INSTALL += "autostart-hostapd"
-IMAGE_INSTALL += "autostart-supplicant"
 
 addtask create_link after do_rootfs before do_image
 
