@@ -11,6 +11,8 @@ inherit core-image
 # full version of command line tools, not the busybox ones
 IMAGE_INSTALL += "packagegroup-core-full-cmdline"
 
+IMAGE_INSTALL += "packagegroup-docker"
+
 IMAGE_INSTALL += "gstreamer1.0 gst-player \
 				gstreamer1.0-vaapi libva va-intel libva-intel-driver \
 				gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
