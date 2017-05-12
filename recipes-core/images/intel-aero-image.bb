@@ -29,8 +29,6 @@ IMAGE_INSTALL += "rsync"
 # Add /etc/os-release
 IMAGE_INSTALL += "os-release"
 
-IMAGE_INSTALL += "openssh-sftp-server"
-
 # increase entropy right after boot so hostapd succeeds authentication
 IMAGE_INSTALL += "rng-tools"
 
@@ -57,6 +55,9 @@ IMAGE_INSTALL += "librealsense"
 IMAGE_INSTALL += "librealsense-graphical-examples"
 
 # connectivity
+IMAGE_INSTALL += "connman connman-client"
+IMAGE_INSTALL += "openssh-sftp-server"
+
 IMAGE_INSTALL += "hostapd"
 
 addtask create_link after do_rootfs before do_image
