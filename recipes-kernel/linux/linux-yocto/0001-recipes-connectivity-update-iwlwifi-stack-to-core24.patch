@@ -1,0 +1,343 @@
+From d6c13e9843cff381bba593b4835fc1c657ed4837 Mon Sep 17 00:00:00 2001
+From: Dan Mordechai <dan.mordechai@intel.com>
+Date: Thu, 23 Mar 2017 13:03:55 +0200
+Subject: [PATCH] recipes-connectivity: update iwlwifi stack to core24
+
+This will update the backport-iwlwifi, hostapd and wpa_suplicant to
+fetch core24 sources.
+
+Signed-off-by: Dan Mordechai <dan.mordechai@intel.com>
+---
+ recipes-connectivity/hostapd/hostapd_2.5.bb        | 55 ----------------
+ recipes-connectivity/hostapd/hostapd_2.6.bb        | 55 ++++++++++++++++
+ .../iwlwifi-driver/backport-iwlwifi_18.bb          | 70 --------------------
+ .../iwlwifi-driver/backport-iwlwifi_24.bb          | 74 ++++++++++++++++++++++
+ .../wpa-supplicant/wpa-supplicant_2.5.bbappend     | 13 ----
+ .../wpa-supplicant/wpa-supplicant_2.6.bbappend     | 13 ++++
+ 6 files changed, 142 insertions(+), 138 deletions(-)
+ delete mode 100644 recipes-connectivity/hostapd/hostapd_2.5.bb
+ create mode 100644 recipes-connectivity/hostapd/hostapd_2.6.bb
+ delete mode 100644 recipes-connectivity/iwlwifi-driver/backport-iwlwifi_18.bb
+ create mode 100644 recipes-connectivity/iwlwifi-driver/backport-iwlwifi_24.bb
+ delete mode 100644 recipes-connectivity/wpa-supplicant/wpa-supplicant_2.5.bbappend
+ create mode 100644 recipes-connectivity/wpa-supplicant/wpa-supplicant_2.6.bbappend
+
+diff --git a/recipes-connectivity/hostapd/hostapd_2.5.bb b/recipes-connectivity/hostapd/hostapd_2.5.bb
+deleted file mode 100644
+index 0442956..0000000
+--- a/recipes-connectivity/hostapd/hostapd_2.5.bb
++++ /dev/null
+@@ -1,55 +0,0 @@
+-HOMEPAGE = "http://hostap.epitest.fi"
+-SECTION = "kernel/userland"
+-LICENSE = "GPLv2 | BSD"
+-LIC_FILES_CHKSUM = "file://README;md5=7f393579f8b109fe91f3b9765d26c7d3"
+-DEPENDS = "libnl openssl"
+-SUMMARY = "User space daemon for extended IEEE 802.11 management"
+-
+-
+-SRC_URI = " \
+-           http://hostap.epitest.fi/releases/hostapd-${PV}.tar.gz \
+-           file://hostapd.conf \
+-           file://defconfig \
+-           file://udhcpd.conf \
+-"
+-
+-S = "${WORKDIR}/hostapd-${PV}"
+-
+-
+-CONFFILES_${PN} += "${sysconfdir}/hostapd.conf \
+-                    ${sysconfdir}/udhcpd.conf \
+-"
+-
+-FILES_${PN} = "/usr/sbin \
+-               /usr/local/bin/hostapd \
+-               /usr/local/bin/hostapd_cli \
+-               ${sysconfdir}/hostapd.conf \
+-               ${sysconfdir}/udhcpd.conf \
+-"
+-
+-FILES_${PN}-dbg = "/usr/local/bin/.debug/hostapd \
+-                   /usr/local/bin/.debug/hostapd_cli \
+-                   /usr/src/debug/hostapd/"
+-
+-
+-do_configure() {
+-    install -m 0644 ${WORKDIR}/defconfig ${S}/hostapd/.config
+-}
+-
+-do_compile() {
+-    export CFLAGS="-MMD -O2 -Wall -Wextra -Wno-unused-parameter -g -I${STAGING_INCDIR}/libnl3"
+-    cd "${S}/hostapd/"
+-    make -j4
+-}
+-
+-do_install() {
+-    cd "${S}/hostapd/"
+-    make install DESTDIR=${D}
+-    install -d ${D}${sysconfdir}
+-    install -m 0644 ${WORKDIR}/hostapd.conf ${D}${sysconfdir}
+-    install -m 0755 ${WORKDIR}/udhcpd.conf ${D}${sysconfdir}
+-}
+-
+-SRC_URI[md5sum] = "69f9cec3f76d74f402864a43e4f8624f"
+-SRC_URI[sha256sum] = "8e272d954dc0d7026c264b79b15389ec2b2c555b32970de39f506b9f463ec74a"
+-
+diff --git a/recipes-connectivity/hostapd/hostapd_2.6.bb b/recipes-connectivity/hostapd/hostapd_2.6.bb
+new file mode 100644
+index 0000000..93b06be
+--- /dev/null
++++ b/recipes-connectivity/hostapd/hostapd_2.6.bb
+@@ -0,0 +1,55 @@
++HOMEPAGE = "http://hostap.epitest.fi"
++SECTION = "kernel/userland"
++LICENSE = "GPLv2 | BSD"
++LIC_FILES_CHKSUM = "file://README;md5=3f01d778be8f953962388307ee38ed2b"
++DEPENDS = "libnl openssl"
++SUMMARY = "User space daemon for extended IEEE 802.11 management"
++
++
++SRC_URI = " \
++           http://hostap.epitest.fi/releases/hostapd-${PV}.tar.gz \
++           file://hostapd.conf \
++           file://defconfig \
++           file://udhcpd.conf \
++"
++
++S = "${WORKDIR}/hostapd-${PV}"
++
++
++CONFFILES_${PN} += "${sysconfdir}/hostapd.conf \
++                    ${sysconfdir}/udhcpd.conf \
++"
++
++FILES_${PN} = "/usr/sbin \
++               /usr/local/bin/hostapd \
++               /usr/local/bin/hostapd_cli \
++               ${sysconfdir}/hostapd.conf \
++               ${sysconfdir}/udhcpd.conf \
++"
++
++FILES_${PN}-dbg = "/usr/local/bin/.debug/hostapd \
++                   /usr/local/bin/.debug/hostapd_cli \
++                   /usr/src/debug/hostapd/"
++
++
++do_configure() {
++    install -m 0644 ${WORKDIR}/defconfig ${S}/hostapd/.config
++}
++
++do_compile() {
++    export CFLAGS="-MMD -O2 -Wall -Wextra -Wno-unused-parameter -g -I${STAGING_INCDIR}/libnl3"
++    cd "${S}/hostapd/"
++    make -j4
++}
++
++do_install() {
++    cd "${S}/hostapd/"
++    make install DESTDIR=${D}
++    install -d ${D}${sysconfdir}
++    install -m 0644 ${WORKDIR}/hostapd.conf ${D}${sysconfdir}
++    install -m 0755 ${WORKDIR}/udhcpd.conf ${D}${sysconfdir}
++}
++
++SRC_URI[md5sum] = "eaa56dce9bd8f1d195eb62596eab34c7"
++SRC_URI[sha256sum] = "01526b90c1d23bec4b0f052039cc4456c2fd19347b4d830d1d58a0a6aea7117d"
++
+diff --git a/recipes-connectivity/iwlwifi-driver/backport-iwlwifi_18.bb b/recipes-connectivity/iwlwifi-driver/backport-iwlwifi_18.bb
+deleted file mode 100644
+index 3b51177..0000000
+--- a/recipes-connectivity/iwlwifi-driver/backport-iwlwifi_18.bb
++++ /dev/null
+@@ -1,70 +0,0 @@
+-SUMMARY = "Intel Wireless LinuxCore 18 kernel driver"
+-DESCRIPTION = "Intel Wireless LinuxCore 18 kernel driver"
+-SECTION = "kernel"
+-LICENSE = "GPLv2"
+-
+-LIC_FILES_CHKSUM = "file://${S}/COPYING;md5=d7810fab7487fb0aad327b76f1be7cd7"
+-
+-inherit module systemd
+-
+-PROVIDES = "kernel-module-cfg80211 \
+-            kernel-module-mac80211 \
+-            kernel-module-iwlmvm   \
+-            kernel-module-iwlwifi  \
+-            kernel-module-compat   "
+-
+-RPROVIDES_${PN} = "kernel-module-cfg80211 \
+-                   kernel-module-mac80211 \
+-                   kernel-module-iwlmvm   \
+-                   kernel-module-iwlwifi  \
+-                   kernel-module-compat "
+-
+-SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/backport-iwlwifi;branch=release/LinuxCore${PV}"
+-SRC_URI += "file://iwlwifi.conf "
+-
+-SRCREV = "${AUTOREV}"
+-
+-S = "${WORKDIR}/git"
+-
+-SYSTEMD_AUTO_ENABLE_${PN} = "enable"
+-
+-CONFFILES_${PN} += "${sysconfdir}/modprobe.d/iwlwifi.conf"
+-
+-PACKAGES = "${PN}"
+-
+-RDEPENDS_${PN}="linux-firmware-iwlwifi-8000c"
+-
+-DEPENDS="virtual/kernel"
+-KERNVER="${KERNEL_VERSION}"
+-
+-## modules actual
+-FILES_${PN} = "/lib/modules/${KERNVER}/updates/cfg80211.ko \
+-               /lib/modules/${KERNVER}/updates/compat.ko \
+-               /lib/modules/${KERNVER}/updates/iwlwifi.ko \
+-               /lib/modules/${KERNVER}/updates/iwlmvm.ko \
+-               /lib/modules/${KERNVER}/updates/mac80211.ko \
+-               ${sysconfdir}/modprobe.d/iwlwifi.conf"
+-
+-EXTRA_OEMAKE = "INSTALL_MOD_PATH=${D} KLIB_BUILD=${KBUILD_OUTPUT} ARCH=i386"
+-
+-addtask do_make_scripts before do_configure
+-do_configure() {
+-      CC=gcc make defconfig-iwlwifi-public KLIB_BUILD=${KBUILD_OUTPUT}
+-}
+-
+-do_install() {
+-    ## install kernel objects from driver tree into target fs
+-    install -m 0755 -d ${D}/lib/modules/${KERNVER}/updates/
+-    install -m 0644 $(find ${S} -name "iwlwifi.ko")  ${D}/lib/modules/${KERNVER}/updates
+-    install -m 0644 $(find ${S} -name "iwlmvm.ko")   ${D}/lib/modules/${KERNVER}/updates
+-    install -m 0644 $(find ${S} -name "cfg80211.ko") ${D}/lib/modules/${KERNVER}/updates/iwl-cfg80211.ko
+-    install -m 0644 $(find ${S} -name "mac80211.ko") ${D}/lib/modules/${KERNVER}/updates/iwl-mac80211.ko
+-    install -m 0644 $(find ${S} -name "compat.ko")   ${D}/lib/modules/${KERNVER}/updates
+-
+-    ## install configs and service scripts
+-    install -d ${D}${sbindir} ${D}${systemd_unitdir}/system/ ${D}${sysconfdir}/modprobe.d
+-    install -m 0644 ${WORKDIR}/iwlwifi.conf ${D}${sysconfdir}/modprobe.d
+-
+-    ## this gets generated for no good reason. delete it.
+-    rm -rf ${D}/usr
+-}
+diff --git a/recipes-connectivity/iwlwifi-driver/backport-iwlwifi_24.bb b/recipes-connectivity/iwlwifi-driver/backport-iwlwifi_24.bb
+new file mode 100644
+index 0000000..1a6de54
+--- /dev/null
++++ b/recipes-connectivity/iwlwifi-driver/backport-iwlwifi_24.bb
+@@ -0,0 +1,74 @@
++SUMMARY = "Intel Wireless LinuxCore 18 kernel driver"
++DESCRIPTION = "Intel Wireless LinuxCore 18 kernel driver"
++SECTION = "kernel"
++LICENSE = "GPLv2"
++
++LIC_FILES_CHKSUM = "file://${S}/COPYING;md5=d7810fab7487fb0aad327b76f1be7cd7"
++
++inherit module systemd
++
++PROVIDES = "kernel-module-cfg80211 \
++            kernel-module-mac80211 \
++            kernel-module-iwlmvm   \
++            kernel-module-iwlwifi  \
++            kernel-module-iwlxvt  \
++            kernel-module-compat   "
++
++RPROVIDES_${PN} = "kernel-module-cfg80211 \
++                   kernel-module-mac80211 \
++                   kernel-module-iwlmvm   \
++                   kernel-module-iwlwifi  \
++                   kernel-module-iwlxvt  \
++                   kernel-module-compat "
++
++SRC_URI = "git://git.kernel.org/pub/scm/linux/kernel/git/iwlwifi/backport-iwlwifi;branch=release/LinuxCore${PV}"
++SRC_URI += "file://iwlwifi.conf "
++
++SRCREV = "${AUTOREV}"
++
++S = "${WORKDIR}/git"
++
++SYSTEMD_AUTO_ENABLE_${PN} = "enable"
++
++CONFFILES_${PN} += "${sysconfdir}/modprobe.d/iwlwifi.conf"
++
++PACKAGES = "${PN}"
++
++RDEPENDS_${PN}="linux-firmware-iwlwifi-8000c"
++
++DEPENDS="virtual/kernel"
++KERNVER="${KERNEL_VERSION}"
++
++## modules actual
++FILES_${PN} = "/lib/modules/${KERNVER}/updates/cfg80211.ko \
++               /lib/modules/${KERNVER}/updates/compat.ko \
++               /lib/modules/${KERNVER}/updates/iwlwifi.ko \
++               /lib/modules/${KERNVER}/updates/iwlxvt.ko \
++               /lib/modules/${KERNVER}/updates/iwlmvm.ko \
++               /lib/modules/${KERNVER}/updates/mac80211.ko \
++               ${sysconfdir}/modprobe.d/iwlwifi.conf"
++
++EXTRA_OEMAKE = "INSTALL_MOD_PATH=${D} KLIB_BUILD=${KBUILD_OUTPUT} ARCH=i386"
++
++addtask do_make_scripts before do_configure
++do_configure() {
++      CC=gcc make defconfig-iwlwifi-public KLIB_BUILD=${KBUILD_OUTPUT}
++}
++
++do_install() {
++    ## install kernel objects from driver tree into target fs
++    install -m 0755 -d ${D}/lib/modules/${KERNVER}/updates/
++    install -m 0644 $(find ${S} -name "iwlwifi.ko")  ${D}/lib/modules/${KERNVER}/updates
++    install -m 0644 $(find ${S} -name "iwlxvt.ko")  ${D}/lib/modules/${KERNVER}/updates
++    install -m 0644 $(find ${S} -name "iwlmvm.ko")   ${D}/lib/modules/${KERNVER}/updates
++    install -m 0644 $(find ${S} -name "cfg80211.ko") ${D}/lib/modules/${KERNVER}/updates/iwl-cfg80211.ko
++    install -m 0644 $(find ${S} -name "mac80211.ko") ${D}/lib/modules/${KERNVER}/updates/iwl-mac80211.ko
++    install -m 0644 $(find ${S} -name "compat.ko")   ${D}/lib/modules/${KERNVER}/updates
++
++    ## install configs and service scripts
++    install -d ${D}${sbindir} ${D}${systemd_unitdir}/system/ ${D}${sysconfdir}/modprobe.d
++    install -m 0644 ${WORKDIR}/iwlwifi.conf ${D}${sysconfdir}/modprobe.d
++
++    ## this gets generated for no good reason. delete it.
++    rm -rf ${D}/usr
++}
+diff --git a/recipes-connectivity/wpa-supplicant/wpa-supplicant_2.5.bbappend b/recipes-connectivity/wpa-supplicant/wpa-supplicant_2.5.bbappend
+deleted file mode 100644
+index 6ab1ab0..0000000
+--- a/recipes-connectivity/wpa-supplicant/wpa-supplicant_2.5.bbappend
++++ /dev/null
+@@ -1,13 +0,0 @@
+-FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
+-
+-SRC_URI += "file://p2p_supplicant.conf \
+-           "
+-
+-do_configure_prepend () {
+-    sed -e 's/#CONFIG_P2P=y/CONFIG_P2P=y/' \
+-        -i ${WORKDIR}/defconfig
+-}
+-
+-do_install_append() {
+-	install -m 600 ${WORKDIR}/p2p_supplicant.conf ${D}${sysconfdir}/p2p_supplicant.conf
+-}
+diff --git a/recipes-connectivity/wpa-supplicant/wpa-supplicant_2.6.bbappend b/recipes-connectivity/wpa-supplicant/wpa-supplicant_2.6.bbappend
+new file mode 100644
+index 0000000..6ab1ab0
+--- /dev/null
++++ b/recipes-connectivity/wpa-supplicant/wpa-supplicant_2.6.bbappend
+@@ -0,0 +1,13 @@
++FILESEXTRAPATHS_prepend := "${THISDIR}/${PN}:"
++
++SRC_URI += "file://p2p_supplicant.conf \
++           "
++
++do_configure_prepend () {
++    sed -e 's/#CONFIG_P2P=y/CONFIG_P2P=y/' \
++        -i ${WORKDIR}/defconfig
++}
++
++do_install_append() {
++	install -m 600 ${WORKDIR}/p2p_supplicant.conf ${D}${sysconfdir}/p2p_supplicant.conf
++}
+-- 
+1.9.1
+
