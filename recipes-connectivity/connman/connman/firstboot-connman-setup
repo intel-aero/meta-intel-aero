@@ -1,0 +1,29 @@
+#!/bin/bash
+
+set -e
+
+FILECONDITION="/etc/sysconfig/connman"
+DEFAULTPASSWORD="1234567890"
+
+while [ 1 ]; do
+    read xx MAC xx <<<$(ip link | grep -A1 -e "^[0-9]*: wl" | grep link/ether)
+    # poor's man "wait for device to appear"
+    if [ -z "$MAC" ]; then
+        sleep 1
+        continue
+    fi
+
+    # remove :
+    SSID=${MAC//:}
+    # make it uppercase
+    SSID=${SSID^^}
+    # prefix "Aero-"
+    SSID="Aero-$SSID"
+    break
+done
+
+mkdir -p $(dirname $FILECONDITION)
+/usr/bin/connmanctl enable wifi || true
+/usr/bin/connmanctl tether wifi off $SSID $DEFAULTPASSWORD
+/usr/bin/connmanctl tether wifi on
+touch $FILECONDITION
