@@ -9,3 +9,4 @@ DHCPServer=yes
 PoolOffset=0
 PoolSize=1
 EmitDNS=no
+EmitRouter=no
