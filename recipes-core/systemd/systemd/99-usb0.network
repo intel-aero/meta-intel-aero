@@ -6,7 +6,7 @@ Address=192.168.7.2/24
 DHCPServer=yes
 
 [DHCPServer]
-PoolOffset=0
-PoolSize=1
+PoolOffset=10
+PoolSize=20
 EmitDNS=no
 EmitRouter=no
