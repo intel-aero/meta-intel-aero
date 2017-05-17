@@ -1,4 +1,5 @@
 #!/bin/bash
+#!/bin/bash
 
 set -e
 
@@ -24,6 +25,21 @@ done
 
 mkdir -p $(dirname $FILECONDITION)
 /usr/bin/connmanctl enable wifi || true
-/usr/bin/connmanctl tether wifi off $SSID $DEFAULTPASSWORD
-/usr/bin/connmanctl tether wifi on
-touch $FILECONDITION
+/usr/bin/connmanctl tether wifi on $SSID $DEFAULTPASSWORD
+
+retries=5
+while [ $retries -gt 0 ]; do
+    ret=$(/usr/bin/connmanctl tether wifi on 2>&1)
+    if [[ "$ret" != *"Not supported"* ]]; then
+        echo $ret
+        break
+    fi
+    sleep 1
+    retries=$((retries - 1))
+    echo "Retry #$((5 - retries))"
+done
+
+if [ $retries -gt 0 ]; then
+    touch $FILECONDITION
+    echo "First boot configuration succesful"
+fi
