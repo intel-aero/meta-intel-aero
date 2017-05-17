@@ -3,6 +3,7 @@ Name=usb0
 
 [Network]
 Address=192.168.7.2/24
+LinkLocalAddressing=no
 DHCPServer=yes
 
 [DHCPServer]
