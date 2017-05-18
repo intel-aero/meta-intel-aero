@@ -5,12 +5,12 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=93888867ace35ffec2c845ea90b2e16b"
 
 SRCREV = "2f62ec7bfe3d220240b42b2a3d920d3fd684a53b"
 SRC_URI = "gitsm://git@github.com/01org/mavlink-router.git;protocol=https;branch=master"
-SRC_URI += "file://mavlink-routerd"
+SRC_URI += "file://mavlink-routerd.sh"
 SRC_URI += "file://main.conf"
 
 S = "${WORKDIR}/git"
 
-inherit autotools pythonnative pkgconfig update-rc.d systemd
+inherit autotools pythonnative pkgconfig systemd
 
 PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}"
 PACKAGECONFIG[systemd] = "--enable-systemd --with-systemdsystemunitdir=${systemd_unitdir}/system/,--disable-systemd"
@@ -20,11 +20,7 @@ do_compile_prepend () {
 }
 
 do_install_append () {
-    if ${@bb.utils.contains('DISTRO_FEATURES', 'sysvinit', 'true', 'false', d)}; then
-        install -d ${D}${sysconfdir}/init.d
-        install -m 0755 ${WORKDIR}/mavlink-routerd ${D}${sysconfdir}/init.d
-        ln -s ./mavlink-routerd ${D}${sysconfdir}/init.d/mavlink-routerd.sh
-    fi
+    install -D -m 0755 ${WORKDIR}/mavlink-routerd.sh ${D}${sysconfdir}/init.d/mavlink-routerd.sh
 
     install -d ${D}${sysconfdir}/mavlink-router/config.d
     install -m 0644 ${WORKDIR}/main.conf ${D}${sysconfdir}/mavlink-router/main.conf
@@ -32,6 +28,9 @@ do_install_append () {
     install -d ${D}/var/lib/mavlink-router/
 }
 
+# we don't want to remove init script to retain backward compatibility since this is
+# called from external scripts
+python rm_sysvinit_initddir (){
+}
+
 SYSTEMD_SERVICE_${PN} = "mavlink-router.service"
-INITSCRIPT_NAME = "mavlink-routerd"
-INITSCRIPT_PARAMS = "defaults 71"
