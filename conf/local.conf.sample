@@ -237,3 +237,6 @@ PACKAGECONFIG_append_pn-nativesdk-qemu = " sdl"
 # this doesn't mean anything to you.
 CONF_VERSION = "1"
 
+# Remove nfs-utils which is being added from packagegroup-core-full-cmdline
+PACKAGE_EXCLUDE="nfs-utils"
+RDEPENDS_packagegroup-core-full-cmdline-sys-services_remove=" nfs-utils"
