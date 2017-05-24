@@ -67,3 +67,5 @@ addtask create_link after do_rootfs before do_image
 do_create_link() {
 	ln -s lib ${WORKDIR}/rootfs/lib64
 }
+
+BAD_RECOMMENDATIONS_pn-intel-aero-image = "busybox-syslog"
