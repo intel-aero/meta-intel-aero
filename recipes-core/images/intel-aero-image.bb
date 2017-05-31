@@ -62,6 +62,9 @@ IMAGE_INSTALL += "openssh-sftp-server"
 
 IMAGE_INSTALL += "hostapd"
 
+# Add build-version
+IMAGE_INSTALL += "build-version"
+
 addtask create_link after do_rootfs before do_image
 
 do_create_link() {
