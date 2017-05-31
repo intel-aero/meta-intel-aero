@@ -1,0 +1,25 @@
+From 594fbd97720ae58198f9ef4c38ed61d36a5be6ca Mon Sep 17 00:00:00 2001
+From: Lucas De Marchi <lucas.demarchi@intel.com>
+Date: Tue, 16 May 2017 14:47:33 -0700
+Subject: [PATCH] ippool: don't use first 8 blocks of 16 bit addressing
+
+---
+ src/ippool.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/src/ippool.c b/src/ippool.c
+index 8a645da..fc5f432 100644
+--- a/src/ippool.c
++++ b/src/ippool.c
+@@ -435,7 +435,7 @@ int __connman_ippool_init(void)
+ {
+ 	DBG("");
+ 
+-	block_16_bits = ntohl(inet_addr("192.168.0.0"));
++	block_16_bits = ntohl(inet_addr("192.168.8.0"));
+ 	block_20_bits = ntohl(inet_addr("172.16.0.0"));
+ 	block_24_bits = ntohl(inet_addr("10.0.0.0"));
+ 	subnet_mask_24 = ntohl(inet_addr("255.255.255.0"));
+-- 
+2.7.4
+

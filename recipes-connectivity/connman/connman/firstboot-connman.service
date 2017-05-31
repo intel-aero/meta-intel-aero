@@ -1,0 +1,14 @@
+[Unit]
+Description=Connection service default configuration
+Requisite=connman.service
+After=connman.service
+Before=network.target multi-user.target
+Wants=network.target
+ConditionPathExists=!/etc/sysconfig/connman
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/firstboot-connman-setup
+
+[Install]
+WantedBy=multi-user.target
