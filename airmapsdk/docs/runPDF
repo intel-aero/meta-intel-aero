@@ -1,0 +1,4 @@
+#! /bin/sh
+
+sphinx-build -b pdf -d ./_build/doctrees . ./_build/pdf
+mv ./_build/pdf/rst2pdf.pdf ./_build/pdf/Airmap.pdf
