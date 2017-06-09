@@ -1,5 +1,5 @@
 DESCRIPTION = "Camera Streaming Daemon is a software daemon to handle video streaming for drones in general"
-DEPENDS = "avahi gstreamer1.0 gstreamer1.0-rtsp-server glib-2.0 python python-future"
+DEPENDS = "avahi gstreamer1.0 gstreamer1.0-rtsp-server glib-2.0 python python-future librealsense"
 LICENSE = "Apache-2.0"
 LIC_FILES_CHKSUM = "file://LICENSE;md5=93888867ace35ffec2c845ea90b2e16b"
 
