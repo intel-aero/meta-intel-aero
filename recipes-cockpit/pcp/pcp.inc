@@ -17,7 +17,8 @@ S = "${WORKDIR}/git"
 inherit pkgconfig autotools-brokensep
 
 # Specify any options you want to pass to the configure script using EXTRA_OECONF:
-EXTRA_OECONF = "--without-python --without-python3 --without-perl"
+CACHED_CONFIGUREVARS = "PACKAGE_DISTRIBUTION=arch"
+EXTRA_OECONF = "--without-python --without-python3 --without-perl --without-qt --without-qt3d"
 EXTRA_OEMAKE = ""
 
 do_configure_prepend() {
