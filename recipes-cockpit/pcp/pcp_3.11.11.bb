@@ -18,6 +18,7 @@ export DIST_ROOT = "${D}"
 #cp ${RECIPE_SYSROOT}/usr/lib/perl/5.24.1/CORE/libperl.so ${RECIPE_SYSROOT}/usr/lib
 
 do_install_append() {
+  sed -i 's|${TMPDIR}/hosttools|${bindir}|' ${D}${sysconfdir}/pcp.conf
   rmdir ${D}/var/run/pcp
   rmdir ${D}/var/run
 }
