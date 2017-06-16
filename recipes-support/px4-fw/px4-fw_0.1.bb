@@ -15,4 +15,6 @@ do_install() {
     install -d ${D}${sysconfdir}/aerofc/px4
     install -m 0755 ${S}/nuttx-aerofc-v1-default.px4 ${D}${sysconfdir}/aerofc/px4
     install -m 0644 ${S}/LICENSE.md ${D}${sysconfdir}/aerofc/px4
+    # Add symbol link to the old directory
+    ln -s ${sysconfdir}/aerofc/px4/ ${D}${sysconfdir}/px4-fw
 }
