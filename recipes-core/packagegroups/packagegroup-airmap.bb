@@ -10,4 +10,15 @@ RDEPENDS_${PN} = "\
 		AirMapSDK-Embedded \
 		python-paho-mqtt \
 		python-requests \
+		python-json \
+		python-cryptography \
+		python-pyyaml \
+		python-dev \
+		libgps \
+		libgpsd \
+		gpsd-conf \
+		gpsd-gpsctl \
+		gps-utils \
+		protobuf \
+		ntp \
 		"
