@@ -6,8 +6,7 @@ LIC_FILES_CHKSUM = "file://LICENSE;md5=93888867ace35ffec2c845ea90b2e16b"
 DEPENDS = "glm librealsense python-future libcoav"
 
 SRCREV = "${AUTOREV}"
-#SRC_URI = "gitsm://git@github.com/01org/collision-avoidance-library.git;protocol=https;branch=master"
-SRC_URI = "gitsm://git@github.com/anselmolsm/collision-avoidance-library.git;protocol=https;branch=coav-control"
+SRC_URI = "gitsm://git@github.com/01org/collision-avoidance-library.git;protocol=https;branch=master"
 
 S = "${WORKDIR}/git"
 
