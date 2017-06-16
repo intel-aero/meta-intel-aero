@@ -1,0 +1,9 @@
+[Unit]
+Description=Mount for SDCard
+BindsTo=dev-mmcblk1p1.device
+Conflicts=media-sdcard.automount
+
+[Mount]
+What=/dev/mmcblk1p1
+Where=/media/sdcard
+TimeoutSec=3
