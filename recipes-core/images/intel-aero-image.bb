@@ -24,6 +24,7 @@ IMAGE_INSTALL += "gstreamer1.0 gst-player \
 
 IMAGE_INSTALL += "camera-streaming-daemon"
 IMAGE_INSTALL += "mavlink-router"
+IMAGE_INSTALL += "libcoav coav-control"
 
 # Allow to easily copy files to/from host
 IMAGE_INSTALL += "rsync"
