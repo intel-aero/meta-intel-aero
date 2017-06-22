@@ -13,7 +13,7 @@ IMAGE_INSTALL += "packagegroup-core-full-cmdline"
 
 IMAGE_INSTALL += "packagegroup-docker"
 
-IMAGE_INSTALL += "gstreamer1.0 gst-player \
+IMAGE_INSTALL += "gstreamer1.0 \
 				gstreamer1.0-vaapi libva va-intel libva-intel-driver \
 				gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
 				gstreamer1.0-plugins-bad \
