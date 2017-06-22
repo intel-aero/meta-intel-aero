@@ -67,6 +67,9 @@ IMAGE_INSTALL += "hostapd"
 # dev-tools
 IMAGE_INSTALL += "dmidecode"
 
+# Init Scripts
+IMAGE_INSTALL += "notify-led"
+
 addtask create_link after do_rootfs before do_image
 
 do_create_link() {
