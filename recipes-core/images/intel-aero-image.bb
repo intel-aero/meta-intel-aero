@@ -41,6 +41,7 @@ IMAGE_INSTALL += "packagegroup-core-buildessential"
 
 # Development/Debug tools
 IMAGE_INSTALL += "valgrind"
+IMAGE_INSTALL += "python-pexpect"
 
 # Tests applications
 IMAGE_INSTALL += "packagegroup-core-tools"
