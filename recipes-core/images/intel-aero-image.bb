@@ -21,6 +21,7 @@ IMAGE_INSTALL += "gstreamer1.0 \
 				jam-stapl \
 				px4-fw \
 				ardupilot-fw \
+				movidius \
 				"
 
 IMAGE_INSTALL += "camera-streaming-daemon"

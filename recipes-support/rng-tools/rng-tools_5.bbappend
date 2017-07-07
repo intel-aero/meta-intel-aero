@@ -1,1 +1,11 @@
-INITSCRIPT_PARAMS = "start 08 2 3 4 5 . stop 30 0 6 1 ."
+inherit systemd
+
+FILESEXTRAPATHS_prepend := "${THISDIR}/files:"
+SRC_URI += "file://rngd.service"
+
+do_install_append() {
+        install -d "${D}${sysconfdir}/systemd/system"
+        install -m 0644 ${WORKDIR}/rngd.service ${D}${sysconfdir}/systemd/system/rngd.service
+}
+
+SYSTEMD_SERVICE_${PN} = "rngd.service"
