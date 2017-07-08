@@ -1,4 +1,4 @@
-[Intel Aero]
+[Main]
 name=Intel Aero
 baseurl=https://download.01.org/aero/repo/1.4/
 gpgcheck=1
