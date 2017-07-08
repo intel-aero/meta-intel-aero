@@ -74,6 +74,9 @@ IMAGE_INSTALL += "notify-led"
 # repo metadata
 IMAGE_INSTALL += "intel-aero-repo"
 
+# Init Scripts missing conversion to systemd
+IMAGE_INSTALL += "initscripts-aero"
+
 addtask create_link after do_rootfs before do_image
 
 do_create_link() {
