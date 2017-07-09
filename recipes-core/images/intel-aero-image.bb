@@ -76,6 +76,9 @@ IMAGE_INSTALL += "notify-led"
 # Init Scripts missing conversion to systemd
 IMAGE_INSTALL += "initscripts-aero"
 
+# cockpit projects
+IMAGE_INSTALL += "cockpit"
+
 # repo metadata
 IMAGE_INSTALL += "intel-aero-repo"
 
