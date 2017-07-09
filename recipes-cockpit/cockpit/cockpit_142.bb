@@ -1,7 +1,7 @@
-SUMMARY = "A user interface for Linux servers"
-DESCRIPTION = "Cockpit runs in a browser and can manage your network of GNU/Linux machines"
+SUMMARY = "Admin interface for Linux machines"
+DESCRIPTION = "Cockpit makes it easy to administer your GNU/Linux servers via a web browser"
 
-LICENSE = "LGPLv2.1 & GPLv2 & Apache-2.0 & MIT & Unknown"
+LICENSE = "LGPLv2.1 & GPLv2 & Apache-2.0 & MIT"
 LIC_FILES_CHKSUM = "file://COPYING;md5=4fbd65380cdd255951079008b364516c \
                     file://COPYING.node;md5=efd1f7702b8f545c82eda53a8d66370f"
 
