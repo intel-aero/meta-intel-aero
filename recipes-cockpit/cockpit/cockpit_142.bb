@@ -18,8 +18,7 @@ REQUIRED_DISTRO_FEATURES = "pam"
 EXTRA_AUTORECONF = "-I tools"
 EXTRA_OECONF = "--with-cockpit-user=root --with-cockpit-group=root --disable-doc"
 
-SYSTEMD_AUTO_ENABLE = "enable"
-SYSTEMD_SERVICE_${PN} = "cockpit.service"
+SYSTEMD_SERVICE_${PN} = "cockpit.socket"
 
 # Avoid warnings "file XXX is owned by uid 1001, which is the same as the user running bitbake. This may be due to host contamination"
 INSANE_SKIP_${PN} += "host-user-contaminated"
