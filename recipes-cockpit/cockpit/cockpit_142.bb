@@ -9,7 +9,9 @@ SRC_URI = "https://github.com/cockpit-project/cockpit/releases/download/${PV}/co
 SRC_URI[md5sum] = "475d45abaa7944d4e09529423cb77acb"
 SRC_URI[sha256sum] = "34728ce97836854de0c51c8244e95a4db695454a6326b72b0f1a033406399659"
 
-inherit gettext pkgconfig autotools systemd
+inherit gettext pkgconfig autotools systemd distro_features_check
+
+REQUIRED_DISTRO_FEATURES = "pam"
 
 #S = "${WORKDIR}/git"
 
