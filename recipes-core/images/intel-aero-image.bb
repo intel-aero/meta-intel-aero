@@ -1,6 +1,8 @@
 DESCRIPTION = "Fully functional image for Intel Aero platform"
 LICENSE = "MIT"
 
+IMAGE_FSTYPES = "iso"
+
 IMAGE_FEATURES += "package-management"
 IMAGE_FEATURES += "ssh-server-openssh"
 IMAGE_FEATURES += "x11-base"
