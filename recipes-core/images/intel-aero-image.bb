@@ -20,15 +20,22 @@ IMAGE_INSTALL += "gstreamer1.0 \
 				gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
 				gstreamer1.0-plugins-bad \
 				gstreamer1.0-meta-base gstreamer1.0-rtsp-server \
-				jam-stapl \
-				px4-fw \
-				ardupilot-fw \
-				movidius \
 				"
 
+# Drone relate projects
 IMAGE_INSTALL += "camera-streaming-daemon"
 IMAGE_INSTALL += "mavlink-router"
 IMAGE_INSTALL += "libcoav coav-control"
+IMAGE_INSTALL += "jam-stapl"
+IMAGE_INSTALL += "px4-fw"
+IMAGE_INSTALL += "ardupilot-fw"
+# AirMap
+IMAGE_INSTALL += "packagegroup-airmap"
+# PX4
+IMAGE_INSTALL += "packagegroup-px4"
+
+# Allow to enumerate movidius devices
+IMAGE_INSTALL += "movidius"
 
 # Allow to easily copy files to/from host
 IMAGE_INSTALL += "rsync"
@@ -48,14 +55,8 @@ IMAGE_INSTALL += "valgrind"
 # Tests applications
 IMAGE_INSTALL += "packagegroup-core-tools"
 
-# AirMap
-IMAGE_INSTALL += "packagegroup-airmap"
-
 # OpenCV
 IMAGE_INSTALL += "opencv"
-
-# PX4
-IMAGE_INSTALL += "packagegroup-px4"
 
 # librealsense
 IMAGE_INSTALL += "librealsense"
@@ -72,12 +73,11 @@ IMAGE_INSTALL += "dmidecode"
 
 # Init Scripts
 IMAGE_INSTALL += "notify-led"
+# Init Scripts missing conversion to systemd
+IMAGE_INSTALL += "initscripts-aero"
 
 # repo metadata
 IMAGE_INSTALL += "intel-aero-repo"
-
-# Init Scripts missing conversion to systemd
-IMAGE_INSTALL += "initscripts-aero"
 
 addtask create_link after do_rootfs before do_image
 
