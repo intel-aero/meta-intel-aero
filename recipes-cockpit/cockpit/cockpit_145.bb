@@ -13,7 +13,12 @@ inherit gettext pkgconfig autotools systemd distro_features_check
 REQUIRED_DISTRO_FEATURES = "pam"
 
 EXTRA_AUTORECONF = "-I tools"
-EXTRA_OECONF = "--with-cockpit-user=root --with-cockpit-group=root --disable-doc"
+EXTRA_OECONF = "--with-cockpit-user=root \
+                --with-cockpit-group=root \
+                --with-branding=default \
+                --disable-ssh \
+                --disable-doc \
+               "
 
 SYSTEMD_SERVICE_${PN} = "cockpit.socket"
 
@@ -27,7 +32,7 @@ FILES_${PN} += "${libdir}/firewalld \
                 "
 
 DEPENDS += "glib-2.0-native intltool-native"
-DEPENDS += "systemd gettext gtk+ json-glib polkit krb5 libssh libpam pcp"
+DEPENDS += "systemd gettext gtk+ json-glib polkit krb5 libpam pcp"
 
 
 
