@@ -59,4 +59,5 @@ do_install_append() {
     rm -rf ${D}${pkgdatadir}/subscriptions
     rm -rf ${D}${pkgdatadir}/tuned
 
+    chmod 4750 ${D}${libexecdir}/cockpit-session
 }
