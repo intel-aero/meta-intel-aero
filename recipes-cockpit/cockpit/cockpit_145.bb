@@ -34,7 +34,29 @@ FILES_${PN} += "${libdir}/firewalld \
 DEPENDS += "glib-2.0-native intltool-native"
 DEPENDS += "systemd gettext gtk+ json-glib polkit krb5 libpam pcp"
 
+do_install_append() {
+    pkgdatadir=${datadir}/cockpit
 
+    # fix up install location of these files
+    cp -al ${D}${pkgdatadir}/dist/* ${D}/${pkgdatadir}
+    rm -rf ${D}${pkgdatadir}/dist
 
+    # remove unwanted artifacts
+    rm -rf ${D}${pkgdatadir}/branding/{centos,debian,fedora,kubernetes,registry,rhel,ubuntu}
 
+    rm -rf ${D}${pkgdatadir}/kdump
+    rm -rf ${D}${pkgdatadir}/kubernetes
+    rm -rf ${D}${pkgdatadir}/machines
+    rm -rf ${D}${pkgdatadir}/networkmanager
+    rm -rf ${D}${pkgdatadir}/ostree
+    rm -rf ${D}${pkgdatadir}/packagekit
+    rm -rf ${D}${pkgdatadir}/playground
+    rm -rf ${D}${pkgdatadir}/realmd
+    rm -rf ${D}${pkgdatadir}/selinux
+    rm -rf ${D}${pkgdatadir}/sosreport
+    rm -rf ${D}${pkgdatadir}/ssh
+    rm -rf ${D}${pkgdatadir}/storaged
+    rm -rf ${D}${pkgdatadir}/subscriptions
+    rm -rf ${D}${pkgdatadir}/tuned
 
+}
