@@ -1,0 +1,13 @@
+{
+    "version": 0,
+
+    "tools": {
+        "pinger": {
+            "label": "Aero-get-version",
+            "path": "aero-get-version.html"
+        }
+    },
+
+    "content-security-policy": "default-src 'self' 'unsafe-inline' 'unsafe-eval'"
+}
+

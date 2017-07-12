@@ -1,0 +1,29 @@
+<head>
+    <title>Aero-get-version</title>
+    <meta charset="utf-8">
+    <link href="../base1/cockpit.css" type="text/css" rel="stylesheet">
+    <script src="../base1/jquery.js"></script>
+    <script src="../base1/cockpit.js"></script>
+</head>
+<body>
+
+<div class="container-fluid" style='max-width: 400px'>
+              <br><br>
+ <p>
+            <span id="output"></span>
+        </p>
+    </div>
+       <script>
+
+        window.onload = function() {
+            var proc = cockpit.spawn("aero-get-version.py");
+            proc.stream(version_output);
+        }
+
+        function version_output(data) {
+            output.append(document.createTextNode(data));
+        }
+    </script>
+</body>
+</html>
+
