@@ -2,7 +2,7 @@
 Description=Hardware RNG Entropy Gatherer Daemon
 
 [Service]
-ExecStart=/usr/sbin/rngd -f -r /dev/urandom
+ExecStart=/usr/sbin/rngd -f -r /dev/hwrng
 
 [Install]
 WantedBy=multi-user.target
