@@ -5,9 +5,8 @@ LICENSE = "LGPLv2.1 & GPLv2 & Apache-2.0 & MIT"
 LIC_FILES_CHKSUM = "file://COPYING;md5=4fbd65380cdd255951079008b364516c"
 
 SRC_URI  = "file://cockpit.pam"
-SRC_URI += "https://github.com/cockpit-project/cockpit/releases/download/${PV}/cockpit-${PV}.tar.xz \
-        file://version \
-        "
+SRC_URI += "file://version"
+SRC_URI += "https://github.com/cockpit-project/cockpit/releases/download/${PV}/cockpit-${PV}.tar.xz"
 SRC_URI[md5sum] = "af79651d3aea2e6140bb313961d7fad0"
 SRC_URI[sha256sum] = "87c67a61ab1e2cb9105a776ed89a18feb92675eb60ddf083b6c8ecf960b7546e"
 
