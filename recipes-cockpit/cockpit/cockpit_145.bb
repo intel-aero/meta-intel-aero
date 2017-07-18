@@ -17,7 +17,6 @@ EXTRA_AUTORECONF = "-I tools"
 EXTRA_OECONF = "--with-cockpit-user=root \
                 --with-cockpit-group=root \
                 --with-branding=default \
-                --disable-ssh \
                 --disable-doc \
                "
 
@@ -33,7 +32,7 @@ FILES_${PN} += "${libdir}/firewalld \
                 "
 
 DEPENDS += "glib-2.0-native intltool-native"
-DEPENDS += "systemd gettext gtk+ json-glib polkit krb5 libpam pcp"
+DEPENDS += "systemd gettext gtk+ json-glib polkit krb5 libssh libpam pcp"
 
 do_install_append() {
     pkgdatadir=${datadir}/cockpit
@@ -55,7 +54,6 @@ do_install_append() {
     rm -rf ${D}${pkgdatadir}/realmd
     rm -rf ${D}${pkgdatadir}/selinux
     rm -rf ${D}${pkgdatadir}/sosreport
-    rm -rf ${D}${pkgdatadir}/ssh
     rm -rf ${D}${pkgdatadir}/storaged
     rm -rf ${D}${pkgdatadir}/subscriptions
     rm -rf ${D}${pkgdatadir}/tuned
