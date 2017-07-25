@@ -12,6 +12,7 @@ inherit core-image
 
 # full version of command line tools, not the busybox ones
 IMAGE_INSTALL += "packagegroup-core-full-cmdline"
+IMAGE_INSTALL += "wget"
 
 IMAGE_INSTALL += "packagegroup-docker"
 
