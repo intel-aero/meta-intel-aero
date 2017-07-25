@@ -13,6 +13,7 @@ BBLAYERS ?= " \
   ##OEROOT##/../meta-openembedded/meta-python \
   ##OEROOT##/../meta-openembedded/meta-networking \
   ##OEROOT##/../meta-openembedded/meta-filesystems \
+  ##OEROOT##/../meta-openembedded/meta-webserver \
   ##OEROOT##/../meta-virtualization \
   ##OEROOT##/../meta-intel \
   ##OEROOT##/../meta-intel-realsense \
