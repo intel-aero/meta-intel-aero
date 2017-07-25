@@ -1,0 +1,20 @@
+diff --git a/lib/header.c b/lib/header.c
+index ab721a5..6c1a6f9 100644
+--- a/lib/header.c
++++ b/lib/header.c
+@@ -1822,6 +1822,7 @@ static rpmRC hdrblobVerifyRegion(rpmTagVal regionTag, int exact_size,
+ 	goto exit;
+     }
+ 
++#ifdef HACK
+     /* In package files region size is expected to match header size. */
+     if (exact_size && !(blob->il == blob->ril && blob->dl == blob->rdl)) {
+ 	rasprintf(buf,
+@@ -1829,6 +1830,7 @@ static rpmRC hdrblobVerifyRegion(rpmTagVal regionTag, int exact_size,
+ 		regionTag, blob->il, blob->ril, blob->dl, blob->rdl);
+ 	goto exit;
+     }
++#endif
+ 
+     blob->regionTag = regionTag;
+     rc = RPMRC_OK;
