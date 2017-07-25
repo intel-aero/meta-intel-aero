@@ -1,0 +1,14 @@
+diff --git a/lib/header.c b/lib/header.c
+index ab721a5..aac6eb5 100644
+--- a/lib/header.c
++++ b/lib/header.c
+@@ -1827,7 +1827,9 @@ static rpmRC hdrblobVerifyRegion(rpmTagVal regionTag, int exact_size,
+ 	rasprintf(buf,
+ 		_("region %d: tag number mismatch %d ril %d dl %d rdl %d\n"),
+ 		regionTag, blob->il, blob->ril, blob->dl, blob->rdl);
++#ifdef HACK
+ 	goto exit;
++#endif
+     }
+ 
+     blob->regionTag = regionTag;
