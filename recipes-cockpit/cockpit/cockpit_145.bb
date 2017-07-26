@@ -21,6 +21,9 @@ EXTRA_OECONF = "--with-cockpit-user=root \
                 --disable-doc \
                "
 
+PACKAGECONFIG ?= ""
+PACKAGECONFIG[pcp] = "--enable-pcp,--disable-pcp,pcp"
+
 SYSTEMD_SERVICE_${PN} = "cockpit.socket"
 
 # Avoid warnings "file XXX is owned by uid 1001, which is the same as the user running bitbake. This may be due to host contamination"
@@ -62,7 +65,7 @@ FILES_${PN}-dashboard =+ "${datadir}/cockpit/dashboard \
                           "
 
 DEPENDS += "glib-2.0-native intltool-native"
-DEPENDS += "systemd gettext gtk+ json-glib polkit krb5 libpam pcp"
+DEPENDS += "systemd gettext gtk+ json-glib polkit krb5 libpam"
 
 do_install_append() {
     pkgdatadir=${datadir}/cockpit
