@@ -79,6 +79,7 @@ IMAGE_INSTALL += "initscripts-aero"
 
 # cockpit projects
 IMAGE_INSTALL += "cockpit-ws"
+IMAGE_INSTALL += "cockpit-bridge"
 IMAGE_INSTALL += "cockpit-pcp"
 IMAGE_INSTALL += "cockpit-docker"
 IMAGE_INSTALL += "cockpit-system"
