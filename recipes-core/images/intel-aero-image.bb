@@ -78,6 +78,7 @@ IMAGE_INSTALL += "notify-led"
 IMAGE_INSTALL += "initscripts-aero"
 
 # cockpit projects
+IMAGE_INSTALL += "cockpit"
 IMAGE_INSTALL += "cockpit-ws"
 IMAGE_INSTALL += "cockpit-bridge"
 IMAGE_INSTALL += "cockpit-pcp"
