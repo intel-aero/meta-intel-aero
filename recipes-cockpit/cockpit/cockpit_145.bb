@@ -26,11 +26,40 @@ SYSTEMD_SERVICE_${PN} = "cockpit.socket"
 # Avoid warnings "file XXX is owned by uid 1001, which is the same as the user running bitbake. This may be due to host contamination"
 INSANE_SKIP_${PN} += "host-user-contaminated"
 
+PACKAGES =+ "${PN}-bridge ${PN}-pcp ${PN}-docker ${PN}-ws ${PN}-system ${PN}-dashboard"
+
 FILES_${PN} += "${libdir}/firewalld \
                 ${libdir}/security \
                 ${datadir}/appdata \
                 ${systemd_unitdir}/system/${PN}.socket \
                 "
+
+FILES_${PN}-pcp =+ "${libexecdir}/cockpit-pcp \
+                    ${datadir}/cockpit/pcp \
+                    ${localstatedir}/lib/pcp/config/pmlogconf/tools/cockpit \
+                    "
+
+FILES_${PN}-bridge =+ "${bindir}/cockpit-bridge \
+                       ${datadir}/cockpit/base1 \
+                       ${libexec}/cockpit-askpass \
+                       "
+FILES_${PN}-docker =+ "${datadir}/cockpit/docker "
+
+FILES_${PN}-ws =+ "${libexecdir}/cockpit-session \
+                   ${libexecdir}/cockpit-ws \
+                   ${sbindir}/remotectl \
+                   ${datadir}/cockpit/branding \
+                   ${datadir}/cockpit/static \
+                   "
+FILES_${PN}-system =+ "${datadir}/cockpit/systemd \
+                       ${datadir}/cockpit/users \
+                       ${datadir}/cockpit/shell \
+                       "
+
+FILES_${PN}-dashboard =+ "${datadir}/cockpit/dashboard \
+                          ${datadir}/cockpit/ssh \
+                          ${libexecdir}/cockpit-ssh \
+                          "
 
 DEPENDS += "glib-2.0-native intltool-native"
 DEPENDS += "systemd gettext gtk+ json-glib polkit krb5 libpam pcp"
