@@ -78,7 +78,11 @@ IMAGE_INSTALL += "notify-led"
 IMAGE_INSTALL += "initscripts-aero"
 
 # cockpit projects
-IMAGE_INSTALL += "cockpit"
+IMAGE_INSTALL += "cockpit-ws"
+IMAGE_INSTALL += "cockpit-pcp"
+IMAGE_INSTALL += "cockpit-docker"
+IMAGE_INSTALL += "cockpit-system"
+IMAGE_INSTALL += "cockpit-dashboard"
 
 # repo metadata
 IMAGE_INSTALL += "intel-aero-repo"
