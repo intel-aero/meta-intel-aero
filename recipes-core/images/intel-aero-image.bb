@@ -83,6 +83,12 @@ IMAGE_INSTALL += "cockpit"
 # repo metadata
 IMAGE_INSTALL += "intel-aero-repo"
 
+enable_repo() {
+		sed -i 's/enabled=0/enabled=1/' ${IMAGE_ROOTFS}/etc/yum.repos.d/intel-aero.repo
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "enable_repo; "
+
 addtask create_link after do_rootfs before do_image
 
 do_create_link() {
