@@ -80,6 +80,9 @@ IMAGE_INSTALL += "initscripts-aero"
 # cockpit projects
 IMAGE_INSTALL += "cockpit"
 
+# enable lighttpd
+IMAGE_INSTALL += "lighttpd"
+
 # repo metadata
 IMAGE_INSTALL += "intel-aero-repo"
 
