@@ -1,7 +1,7 @@
 SUMMARY = "Admin interface for Linux machines"
 DESCRIPTION = "Cockpit makes it easy to administer your GNU/Linux servers via a web browser"
 
-LICENSE = "LGPLv2.1 & GPLv2 & Apache-2.0 & MIT"
+LICENSE = "LGPLv2+"
 LIC_FILES_CHKSUM = "file://COPYING;md5=4fbd65380cdd255951079008b364516c"
 
 SRC_URI  = "file://cockpit.pam"
