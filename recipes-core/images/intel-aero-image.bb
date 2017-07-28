@@ -85,6 +85,9 @@ IMAGE_INSTALL += "cockpit-docker"
 IMAGE_INSTALL += "cockpit-system"
 IMAGE_INSTALL += "cockpit-dashboard"
 
+# HTTP Server
+IMAGE_INSTALL+="aero-http-server"
+
 # repo metadata
 IMAGE_INSTALL += "intel-aero-repo"
 
