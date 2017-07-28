@@ -80,6 +80,9 @@ IMAGE_INSTALL += "initscripts-aero"
 # cockpit projects
 IMAGE_INSTALL += "cockpit"
 
+# HTTP Server
+IMAGE_INSTALL+="aero-http-server"
+
 # repo metadata
 IMAGE_INSTALL += "intel-aero-repo"
 

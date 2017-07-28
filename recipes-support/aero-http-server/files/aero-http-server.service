@@ -1,0 +1,10 @@
+[Unit]
+Description=Simple HTTP Server
+Wants=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/aero-http-server.sh
+
+[Install]
+WantedBy=multi-user.target
