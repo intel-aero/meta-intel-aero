@@ -1,0 +1,12 @@
+[Unit]
+Description=Simple HTTP Server
+Wants=network.target
+Requires=aero-http-server.socket
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python /usr/bin/aero-http-server.py
+TimeoutStopSec=5
+
+[Install]
+WantedBy=multi-user.target
