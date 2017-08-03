@@ -1,0 +1,14 @@
+[Unit]
+Description=NetworkManager service default configuration
+Requisite=NetworkManager.service
+After=NetworkManager.service
+Before=network.target multi-user.target
+Wants=network.target
+ConditionPathExists=!/etc/sysconfig/networkmanager
+
+[Service]
+Type=oneshot
+ExecStart=/usr/sbin/firstboot-networkmanager-setup
+
+[Install]
+WantedBy=multi-user.target

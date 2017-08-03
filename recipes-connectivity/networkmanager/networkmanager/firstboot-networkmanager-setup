@@ -1,0 +1,50 @@
+#!/bin/bash
+
+FILECONDITION="/etc/sysconfig/networkmanager"
+WIFI_AP_DEFAULTPASSWORD="1234567890"
+
+# This is the APN name for AT&T HSPA+, user should change this with:
+# nmcli con modify Modem gsm.apn <name>
+MODEM_APN_NAME="phone"
+
+while [ 1 ]; do
+    read xx MAC xx <<<$(ip link | grep -A1 -e "^[0-9]*: wl" | grep link/ether)
+    # poor's man "wait for device to appear"
+    if [ -z "$MAC" ]; then
+        sleep 1
+        continue
+    fi
+
+    # remove :
+    SSID=${MAC//:}
+    # make it uppercase
+    SSID=${SSID^^}
+    # prefix "Aero-"
+    SSID="Aero-$SSID"
+    break
+done
+
+# Let NetworkManager start dnsmasq with the right configuration file
+systemctl disable dnsmasq
+systemctl stop dnsmasq
+
+# SystemD is creating this file as symbolic link and taking care of if, not
+# letting netowrkmanager update it with dns from modem of wifi client mode.
+rm /etc/resolv.conf
+
+# Wifi
+nmcli con add type wifi ifname '*' con-name Wifi-hostspot autoconnect yes ssid $SSID
+nmcli con modify Wifi-hostspot 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
+nmcli con modify Wifi-hostspot wifi-sec.key-mgmt wpa-psk
+nmcli con modify Wifi-hostspot wifi-sec.psk "$WIFI_AP_DEFAULTPASSWORD"
+nmcli con modify Wifi-hostspot ipv4.addresses 192.168.8.1/24
+nmcli con up Wifi-hostspot
+
+# Modem
+nmcli con add type gsm ifname '*' con-name Modem apn $MODEM_APN_NAME autoconnect yes
+nmcli con up Modem
+
+# Make sure this script just run once
+mkdir -p $(dirname $FILECONDITION)
+touch $FILECONDITION
+echo "First boot configuration succesful"
