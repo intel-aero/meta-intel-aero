@@ -1,0 +1,9 @@
+[Unit]
+Description=aero-http-server socket
+PartOf=aero-http-server.service
+
+[Socket]
+ListenStream=8000
+
+[Install]
+WantedBy=sockets.target
