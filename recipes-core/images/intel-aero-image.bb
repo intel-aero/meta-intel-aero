@@ -64,7 +64,10 @@ IMAGE_INSTALL += "librealsense"
 IMAGE_INSTALL += "librealsense-graphical-examples"
 
 # connectivity
-IMAGE_INSTALL += "connman connman-client"
+IMAGE_INSTALL += "modemmanager"
+IMAGE_INSTALL += "networkmanager"
+IMAGE_INSTALL += "ppp"
+IMAGE_INSTALL += "resolvconf"
 IMAGE_INSTALL += "openssh-sftp-server"
 
 IMAGE_INSTALL += "hostapd"

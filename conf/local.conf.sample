@@ -243,9 +243,6 @@ RDEPENDS_packagegroup-core-full-cmdline-sys-services_remove=" nfs-utils at tcp-w
 PACKAGE_EXCLUDE+=" ed"
 RDEPENDS_packagegroup-core-full-cmdline-utils_remove = " ed"
 
-PACKAGE_EXCLUDE+=" wireless-tools"
-RDEPENDS_packagegroup-base-wifi_remove = " wireless-tools"
-
 PACKAGE_EXCLUDE+=" libacpi libnss-mdns"
 RDEPENDS_packagegroup-base-acpi_remove = " libacpi"
 RDEPENDS_packagegroup-base-zeroconf_remove = " libnss-mdns"
