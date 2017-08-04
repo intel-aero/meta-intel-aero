@@ -87,6 +87,7 @@ IMAGE_INSTALL += "cockpit-bridge"
 IMAGE_INSTALL += "cockpit-docker"
 IMAGE_INSTALL += "cockpit-system"
 IMAGE_INSTALL += "cockpit-dashboard"
+IMAGE_INSTALL += "aero-cockpit-plugins"
 
 # SimpleHTTPServer
 IMAGE_INSTALL += "aero-http-server"
