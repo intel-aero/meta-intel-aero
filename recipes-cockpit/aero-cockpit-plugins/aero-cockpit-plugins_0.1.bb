@@ -6,7 +6,7 @@ PR = "r1"
 DEPENDS = "cockpit"
 
 PV = "0.1+git${SRCPV}"
-SRCREV = "401415f1dfe4cfaa5e518e95fdb79609c8fdcffa"
+SRCREV = "15a693cbbc40b96fdf289dbf97078260de2bf215"
 SRC_URI = "git://github.com/intel-aero/aero-cockpit-plugins"
 
 S = "${WORKDIR}/git"

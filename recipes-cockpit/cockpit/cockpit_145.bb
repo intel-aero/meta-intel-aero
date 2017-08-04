@@ -29,7 +29,7 @@ SYSTEMD_SERVICE_${PN} = "cockpit.socket"
 # Avoid warnings "file XXX is owned by uid 1001, which is the same as the user running bitbake. This may be due to host contamination"
 INSANE_SKIP_${PN} += "host-user-contaminated"
 
-PACKAGES =+ "${PN}-bridge ${PN}-pcp ${PN}-docker ${PN}-ws ${PN}-system ${PN}-dashboard"
+PACKAGES =+ "${PN}-bridge ${PN}-pcp ${PN}-docker ${PN}-ws ${PN}-system ${PN}-dashboard ${PN}-networkmanager"
 
 FILES_${PN} += "${libdir}/firewalld \
                 ${libdir}/security \
@@ -64,6 +64,8 @@ FILES_${PN}-dashboard =+ "${datadir}/cockpit/dashboard \
                           ${libexecdir}/cockpit-ssh \
                           "
 
+FILES_${PN}-networkmanager =+ "${datadir}/cockpit/networkmanager"
+
 DEPENDS += "glib-2.0-native intltool-native"
 DEPENDS += "systemd gettext gtk+ json-glib polkit krb5 libpam"
 
@@ -80,7 +82,6 @@ do_install_append() {
     rm -rf ${D}${pkgdatadir}/kdump
     rm -rf ${D}${pkgdatadir}/kubernetes
     rm -rf ${D}${pkgdatadir}/machines
-    rm -rf ${D}${pkgdatadir}/networkmanager
     rm -rf ${D}${pkgdatadir}/ostree
     rm -rf ${D}${pkgdatadir}/packagekit
     rm -rf ${D}${pkgdatadir}/playground
