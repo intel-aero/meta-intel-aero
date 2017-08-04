@@ -23,7 +23,7 @@ IMAGE_INSTALL += "gstreamer1.0 \
 				gstreamer1.0-meta-base gstreamer1.0-rtsp-server \
 				"
 
-# Drone relate projects
+# Drone related projects
 IMAGE_INSTALL += "camera-streaming-daemon"
 IMAGE_INSTALL += "mavlink-router"
 IMAGE_INSTALL += "libcoav coav-control"
