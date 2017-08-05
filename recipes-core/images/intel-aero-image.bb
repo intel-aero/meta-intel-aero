@@ -100,11 +100,11 @@ IMAGE_INSTALL += "aero-bios"
 
 
 # removals
-IMAGE_INSTALL_remove = "nfs-utils at tcp-wrappers ed libacpi libnss-mdns"
+IMAGE_INSTALL_remove = "nfs-utils at tcp-wrappers ed libacpi libnss-mdns acpid"
 RDEPENDS_packagegroup-core-full-cmdline-sys-services_remove=" nfs-utils at tcp-wrappers"
 RDEPENDS_packagegroup-core-full-cmdline-utils_remove = " ed"
 
-RDEPENDS_packagegroup-base-acpi_remove = " libacpi"
+RDEPENDS_packagegroup-base_remove = " acpid"
 RDEPENDS_packagegroup-base-zeroconf_remove = " libnss-mdns"
 
 PACKAGECONFIG_remove = " libproxy"
