@@ -236,15 +236,3 @@ PACKAGECONFIG_append_pn-nativesdk-qemu = " sdl"
 # track the version of this file when it was generated. This can safely be ignored if
 # this doesn't mean anything to you.
 CONF_VERSION = "1"
-
-PACKAGE_EXCLUDE="nfs-utils at tcp-wrappers"
-RDEPENDS_packagegroup-core-full-cmdline-sys-services_remove=" nfs-utils at tcp-wrappers"
-
-PACKAGE_EXCLUDE+=" ed"
-RDEPENDS_packagegroup-core-full-cmdline-utils_remove = " ed"
-
-PACKAGE_EXCLUDE+=" libacpi libnss-mdns"
-RDEPENDS_packagegroup-base-acpi_remove = " libacpi"
-RDEPENDS_packagegroup-base-zeroconf_remove = " libnss-mdns"
-
-PACKAGECONFIG_remove = " libproxy"
