@@ -98,6 +98,18 @@ IMAGE_INSTALL += "intel-aero-repo"
 # bios
 IMAGE_INSTALL += "aero-bios"
 
+
+# removals
+IMAGE_INSTALL_remove = "nfs-utils at tcp-wrappers ed libacpi libnss-mdns acpid"
+RDEPENDS_packagegroup-core-full-cmdline-sys-services_remove=" nfs-utils at tcp-wrappers"
+RDEPENDS_packagegroup-core-full-cmdline-utils_remove = " ed"
+
+RDEPENDS_packagegroup-base_remove = " acpid"
+RDEPENDS_packagegroup-base-zeroconf_remove = " libnss-mdns"
+
+PACKAGECONFIG_remove = " libproxy"
+
+
 enable_repo() {
 		sed -i 's/enabled=0/enabled=1/' ${IMAGE_ROOTFS}/etc/yum.repos.d/intel-aero.repo
 }
