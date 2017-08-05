@@ -244,7 +244,7 @@ PACKAGE_EXCLUDE+=" ed"
 RDEPENDS_packagegroup-core-full-cmdline-utils_remove = " ed"
 
 PACKAGE_EXCLUDE+=" libacpi libnss-mdns"
-RDEPENDS_packagegroup-base-acpi_remove = " libacpi"
+RDEPENDS_packagegroup-base-acpi_remove = " libacpi acpid"
 RDEPENDS_packagegroup-base-zeroconf_remove = " libnss-mdns"
 
 PACKAGECONFIG_remove = " libproxy"
