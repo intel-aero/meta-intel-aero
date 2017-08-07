@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 FILECONDITION="/etc/sysconfig/networkmanager"
 WIFI_AP_DEFAULTPASSWORD="1234567890"
@@ -26,11 +26,11 @@ done
 
 # Let NetworkManager start dnsmasq with the right configuration file
 systemctl disable dnsmasq
-systemctl stop dnsmasq
+systemctl stop dnsmasq || /bin/true
 
-# SystemD is creating this file as symbolic link and taking care of if, not
+# systemd is creating this file as symbolic link and taking care of if, not
 # letting netowrkmanager update it with dns from modem of wifi client mode.
-rm /etc/resolv.conf
+rm /etc/resolv.conf || /bin/true
 
 # Wifi
 nmcli con add type wifi ifname '*' con-name hotspot autoconnect yes ssid $SSID
@@ -42,7 +42,7 @@ nmcli con up hotspot
 
 # Modem
 nmcli con add type gsm ifname '*' con-name modem apn $MODEM_APN_NAME autoconnect yes
-nmcli con up modem
+nmcli con up modem || /bin/true
 
 # Make sure this script just run once
 mkdir -p $(dirname $FILECONDITION)
