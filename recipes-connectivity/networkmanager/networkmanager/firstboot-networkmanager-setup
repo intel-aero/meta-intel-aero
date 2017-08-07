@@ -32,6 +32,9 @@ systemctl stop dnsmasq || /bin/true
 # letting netowrkmanager update it with dns from modem of wifi client mode.
 rm /etc/resolv.conf || /bin/true
 
+# remove all system connections
+rm /etc/NetworkManager/system-connections/* || /bin/true
+
 # Wifi
 nmcli con add type wifi ifname '*' con-name hotspot autoconnect yes ssid $SSID
 nmcli con modify hotspot 802-11-wireless.mode ap 802-11-wireless.band bg ipv4.method shared
