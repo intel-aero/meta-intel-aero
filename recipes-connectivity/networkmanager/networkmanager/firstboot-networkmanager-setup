@@ -50,4 +50,8 @@ nmcli con up modem || /bin/true
 # Make sure this script just run once
 mkdir -p $(dirname $FILECONDITION)
 touch $FILECONDITION
+
+# Let changes take effect now
+systemctl restart NetworkManager
+
 echo "First boot configuration succesful"
