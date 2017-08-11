@@ -1,0 +1,202 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mavlinkcamera>
+    <definition version="1">
+        <model>RealSense RGB Camera</model>
+        <vendor>Intel Corporation</vendor>
+    </definition>
+    <parameters>
+        <parameter name="camera-mode" type="uint32" default="1">
+            <description>Camera Mode</description>
+            <options>
+                <option name="still" value="0">
+                    <exclusions>
+                        <exclude>video-size</exclude>
+                    </exclusions>
+                </option>
+                <option name="video" value="1">
+                </option>
+            </options>
+        </parameter>
+        <parameter name="brightness" type="uint32" default="56">
+            <description>Brightness</description>
+            <options>
+                <option name="0" value="0" />
+                <option name="25" value="25" />
+                <option name="56" value="56" />
+                <option name="75" value="75" />
+                <option name="100" value="100" />
+                <option name="125" value="125" />
+                <option name="150" value="150" />
+                <option name="175" value="175" />
+                <option name="200" value="200" />
+                <option name="225" value="225" />
+            </options>
+        </parameter>
+        <parameter name="contrast" type="uint32" default="32">
+            <description>Contrast</description>
+            <options>
+                <option name="16" value="16" />
+                <option name="20" value="20" />
+                <option name="24" value="24" />
+                <option name="28" value="28" />
+                <option name="32" value="32" />
+                <option name="36" value="36" />
+                <option name="40" value="40" />
+                <option name="44" value="44" />
+                <option name="48" value="48" />
+                <option name="64" value="64" />
+            </options>
+        </parameter>
+        <parameter name="saturation" type="uint32" default="128">
+            <description>Saturation</description>
+            <options>
+                <option name="0" value="0" />
+                <option name="25" value="25" />
+                <option name="50" value="50" />
+                <option name="75" value="75" />
+                <option name="100" value="100" />
+                <option name="128" value="128" />
+                <option name="150" value="150" />
+                <option name="175" value="175" />
+                <option name="200" value="200" />
+                <option name="225" value="225" />
+            </options>
+        </parameter>
+        <parameter name="hue" type="int32" default="0">
+            <description>Hue</description>
+            <options>
+                <option name="-2200" value="-2200" />
+                <option name="-1100" value="-1100" />
+                <option name="-500"  value="-500" />
+                <option name="-200"  value="-200" />
+                <option name="0"     value="0" />
+                <option name="200"   value="200" />
+                <option name="500"   value="500" />
+                <option name="1100"  value="1100" />
+                <option name="2200"  value="2200" />
+            </options>
+        </parameter>
+        <parameter name="wb-mode" type="uint32" default="1">
+            <description>White Balance Mode</description>
+            <options>
+                <option name="Manual" value="0" />
+                <option name="Auto" value="1" />
+            </options>
+        </parameter>
+        <parameter name="gamma" type="uint32" default="220">
+            <description>Gamma</description>
+            <options>
+                <option name="100" value="100" />
+                <option name="120" value="120" />
+                <option name="140" value="140" />
+                <option name="160" value="160" />
+                <option name="180" value="180" />
+                <option name="200" value="200" />
+                <option name="220" value="220" />
+                <option name="280" value="280" />
+            </options>
+        </parameter>
+        <parameter name="gain" type="uint32" default="32">
+            <description>Gain</description>
+            <options>
+                <option name="0" value="0" />
+                <option name="16" value="16" />
+                <option name="32" value="32" />
+                <option name="48" value="48" />
+                <option name="64" value="64" />
+                <option name="80" value="80" />
+                <option name="100" value="100" />
+                <option name="128" value="128" />
+                <option name="256" value="256" />
+            </options>
+        </parameter>
+        <parameter name="power-mode" type="uint32" default="0">
+            <description>Power Line Frequency </description>
+            <options>
+                <option name="Disabled" value="0" />
+                <option name="50 Hz" value="1" />
+                <option name="60 Hz" value="2" />
+            </options>
+        </parameter>
+        <parameter name="wb-temp" type="uint32" default="6500">
+            <description>White Balance Temperature </description>
+            <options>
+                <option name="2000" value="2000" />
+                <option name="3000" value="3000" />
+                <option name="4000" value="4000" />
+                <option name="5000" value="5000" />
+                <option name="6000" value="6000" />
+                <option name="6500" value="6500" />
+                <option name="7000" value="7000" />
+                <option name="8000" value="8000" />
+            </options>
+        </parameter>
+        <parameter name="sharpness" type="uint32" default="0">
+            <description>Sharpness </description>
+            <options>
+                <option name="0" value="0" />
+                <option name="1" value="1" />
+                <option name="2" value="2" />
+                <option name="3" value="3" />
+                <option name="4" value="4" />
+                <option name="5" value="5" />
+                <option name="6" value="6" />
+                <option name="7" value="7" />
+            </options>
+        </parameter>
+        <parameter name="backlight" type="uint32" default="1">
+            <description>Backlight Compensation</description>
+            <options>
+                <option name="0" value="0" />
+                <option name="1" value="1" />
+                <option name="2" value="2" />
+                <option name="3" value="3" />
+                <option name="4" value="4" />
+            </options>
+        </parameter>
+        <parameter name="exp-mode" type="uint32" default="3">
+            <description>Exposure Mode</description>
+            <options>
+                <option name="Manual Mode" value="0" />
+                <option name="Aperture Priority Mode" value="3" />
+            </options>
+        </parameter>
+        <parameter name="exp-absolute" type="uint32" default="1">
+            <description>Exposure Absolute</description>
+            <options>
+                <option name="1" value="1" />
+                <option name="111" value="111" />
+                <option name="222" value="222" />
+                <option name="333" value="333" />
+                <option name="444" value="444" />
+                <option name="555" value="555" />
+                <option name="666" value="666" />
+            </options>
+        </parameter>
+        <parameter name="video-size" type="uint32" default="0">
+            <description>Video Resolution</description>
+            <options>
+                <option name="1920x1080x30" value="1" />
+                <option name="1920x1080x15" value="2" />
+                <option name="1280x720x30"  value="3" />
+                <option name="1280x720x15"  value="4" />
+                <option name="960x540x30"   value="5" />
+                <option name="960x540x15"   value="6" />
+                <option name="848x480x30"   value="7" />
+                <option name="848x480x15"   value="8" />
+                <option name="640x480x60"   value="9" />
+                <option name="640x480x30"   value="10" />
+                <option name="640x480x15"   value="11" />
+                <option name="640x360x30"   value="12" />
+                <option name="640x360x15"   value="13" />
+                <option name="424x240x30"   value="14" />
+                <option name="424x240x15"   value="15" />
+                <option name="320x240x60"   value="16" />
+                <option name="320x240x30"   value="17" />
+                <option name="320x240x15"   value="18" />
+                <option name="320x180x30"   value="19" />
+                <option name="320x180x15"   value="20" />
+            </options>
+        </parameter>
+    </parameters>
+</mavlinkcamera>
