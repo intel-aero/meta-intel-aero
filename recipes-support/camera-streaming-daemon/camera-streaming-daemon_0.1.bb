@@ -15,6 +15,8 @@ inherit autotools pythonnative pkgconfig update-rc.d systemd
 PACKAGECONFIG ??= "${@bb.utils.filter('DISTRO_FEATURES', 'systemd', d)}"
 PACKAGECONFIG[systemd] = "--enable-systemd --with-systemdsystemunitdir=${systemd_unitdir}/system/,--disable-systemd"
 
+EXTRA_OECONF_append = " --enable-aero"
+
 do_compile_prepend () {
     export PYTHONPATH="${PKG_CONFIG_SYSROOT_DIR}/usr/lib/python2.7/site-packages/"
 }
