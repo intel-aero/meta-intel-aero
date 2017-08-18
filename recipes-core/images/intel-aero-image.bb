@@ -100,6 +100,8 @@ IMAGE_INSTALL += "aero-bios"
 
 enable_repo() {
 		sed -i 's/enabled=0/enabled=1/' ${IMAGE_ROOTFS}/etc/yum.repos.d/intel-aero.repo
+		Version=$(echo ${DISTRO_VERSION}|cut -f 1,2 -d ".")
+		sed -i "s/<Version>/${Version}/" ${IMAGE_ROOTFS}/etc/yum.repos.d/intel-aero.repo
 }
 
 ROOTFS_POSTPROCESS_COMMAND += "enable_repo; "

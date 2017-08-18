@@ -1,5 +1,5 @@
 [Main]
 name=Intel Aero
-baseurl=https://download.01.org/aero/repo/1.5/
+baseurl=https://download.01.org/aero/repo/<Version>/
 gpgcheck=1
 enabled=0
