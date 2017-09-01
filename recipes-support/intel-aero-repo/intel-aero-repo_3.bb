@@ -8,6 +8,7 @@ SRC_URI = "file://intel-aero.repo \
 LIC_FILES_CHKSUM = "file://LICENSE;md5=3da9cfbcb788c80a0384361b4de20420"
 
 S = "${WORKDIR}"
+PR = "r1"
 
 do_install() {
         install -d ${D}${sysconfdir}/yum.repos.d
