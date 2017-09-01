@@ -1,0 +1,27 @@
+From b9d63dc24d0f042b2d174b3bd19e8a62320dfa95 Mon Sep 17 00:00:00 2001
+From: Lucas De Marchi <lucas.demarchi@intel.com>
+Date: Mon, 28 Aug 2017 11:06:33 -0700
+Subject: [PATCH] Set rx trigger on ttyS1
+
+This is a workaround for corruption seem on ttyS1 on Aero for the
+default value (8). This means we get higher interrupt rates, but
+the corruption is much lower.
+---
+ mavlink-router.service.in | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/mavlink-router.service.in b/mavlink-router.service.in
+index 9df6423..fba7b1e 100644
+--- a/mavlink-router.service.in
++++ b/mavlink-router.service.in
+@@ -3,6 +3,7 @@ Description=MAVLink Router
+ 
+ [Service]
+ Type=simple
++ExecStartPre=/bin/bash -c 'echo 4 > /sys/class/tty/ttyS1/rx_trig_bytes'
+ ExecStart=@bindir@/mavlink-routerd
+ Restart=on-failure
+ 
+-- 
+2.13.5
+

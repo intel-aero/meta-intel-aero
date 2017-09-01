@@ -7,8 +7,10 @@ SRCREV = "2de87d42501665df1ef7e707db23e1d25b8df245"
 SRC_URI = "gitsm://git@github.com/01org/mavlink-router.git;protocol=https;branch=master"
 SRC_URI += "file://mavlink-routerd.sh"
 SRC_URI += "file://main.conf"
+SRC_URI += "file://0001-Set-rx-trigger-on-ttyS1.patch"
 
 S = "${WORKDIR}/git"
+PR = "r1"
 
 inherit autotools pythonnative pkgconfig systemd
 
