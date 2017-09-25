@@ -98,6 +98,9 @@ IMAGE_INSTALL += "intel-aero-repo"
 # bios
 IMAGE_INSTALL += "aero-bios"
 
+# Aero optical-flow
+IMAGE_INSTALL += "optical-flow"
+
 enable_repo() {
 		sed -i 's/enabled=0/enabled=1/' ${IMAGE_ROOTFS}/etc/yum.repos.d/intel-aero.repo
 		version=$(echo ${DISTRO_VERSION}|cut -f 1,2 -d ".")
