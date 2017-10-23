@@ -10,7 +10,7 @@ SRC_URI = "gitsm://git@github.com/intel-aero/aero-optical-flow.git;protocol=http
 
 S = "${WORKDIR}/git"
 
-FILES_${PN} += "${systemd_unitdir}/aero-optical-flow.service"
+FILES_${PN} += "${systemd_system_unitdir}/aero-optical-flow.service"
 
 inherit cmake systemd
 
@@ -18,6 +18,6 @@ do_install () {
     install -d ${D}${bindir}/
     install -m 0755 ${B}/aero-optical-flow ${D}${bindir}/
 
-    install -d ${D}${systemd_unitdir}
-    install -m 0644 ${B}/aero-optical-flow.service ${D}${systemd_unitdir}/
+    install -d ${D}${systemd_system_unitdir}
+    install -m 0644 ${B}/aero-optical-flow.service ${D}${systemd_system_unitdir}/
 }
