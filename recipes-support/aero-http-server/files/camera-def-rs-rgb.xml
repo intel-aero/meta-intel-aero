@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<mavlinkcamera>
+    <definition version="1">
+        <model>RealSense RGB Camera</model>
+        <vendor>Intel Corporation</vendor>
+    </definition>
+    <parameters>
+        <!-- control = 0 tells us this should not create an automatic UI control -->
+        <parameter name="camera-mode" type="uint32" default="1" control="0">
+            <description>Camera Mode</description>
+            <options>
+                <option name="still" value="0">
+                    <exclusions>
+                        <exclude>video-size</exclude>
+                    </exclusions>
+                </option>
+                <option name="video" value="1">
+                </option>
+            </options>
+        </parameter>
+        <parameter name="brightness" type="uint32" default="56" min="0" max="225" step ="1">
+            <description>Brightness</description>
+        </parameter>
+        <parameter name="contrast" type="uint32" default="32" min="16" max="64" step ="1">
+            <description>Contrast</description>
+        </parameter>
+        <parameter name="saturation" type="uint32" default="128" min="0" max="225" step ="1">
+            <description>Saturation</description>
+        </parameter>
+        <parameter name="hue" type="int32" default="0" min="-2200" max="2200" step ="1">
+            <description>Hue</description>
+        </parameter>
+        <parameter name="gamma" type="uint32" default="220" min="100" max="280" step ="1">
+            <description>Gamma</description>
+        </parameter>
+        <parameter name="gain" type="uint32" default="32" min="0" max="256" step ="1">
+            <description>Gain</description>
+        </parameter>
+        <parameter name="sharpness" type="uint32" default="0" min="0" max="7" step ="1">
+            <description>Sharpness </description>
+        </parameter>
+        <parameter name="backlight" type="uint32" default="1" min="0" max="4" step ="1">
+            <description>Backlight Compensation</description>
+        </parameter>
+        <parameter name="power-mode" type="uint32" default="0">
+            <description>Power Line Frequency </description>
+            <options>
+                <option name="Disabled" value="0" />
+                <option name="50 Hz" value="1" />
+                <option name="60 Hz" value="2" />
+            </options>
+        </parameter>
+        <parameter name="wb-mode" type="uint32" default="1">
+            <description>White Balance Mode</description>
+            <options>
+                <option name="Manual Mode" value="0" />
+                <option name="Auto" value="1" >
+                <exclusions>
+                    <exclude>wb-temp</exclude>
+                </exclusions>
+                </option>
+            </options>
+        </parameter>
+        <parameter name="wb-temp" type="uint32" default="6500" min="2000" max="8000" step ="1">
+            <description>White Balance Temperature </description>
+        </parameter>
+        <parameter name="exp-mode" type="uint32" default="3">
+            <description>Exposure Mode</description>
+            <options>
+                <option name="Manual Mode" value="0" />
+                <option name="Aperture Priority Mode" value="3" >
+                <exclusions>
+                    <exclude>exp-absolute</exclude>
+                </exclusions>
+                </option>
+            </options>
+        </parameter>
+        <parameter name="exp-absolute" type="uint32" default="1" min="1" max="666" step ="1">
+            <description>Exposure Absolute</description>
+        </parameter>
+        <parameter name="video-size" type="uint32" default="0">
+            <description>Video Resolution</description>
+            <options>
+                <option name="1920x1080x30" value="1" />
+                <option name="1920x1080x15" value="2" />
+                <option name="1280x720x30"  value="3" />
+                <option name="1280x720x15"  value="4" />
+                <option name="960x540x30"   value="5" />
+                <option name="960x540x15"   value="6" />
+                <option name="848x480x30"   value="7" />
+                <option name="848x480x15"   value="8" />
+                <option name="640x480x60"   value="9" />
+                <option name="640x480x30"   value="10" />
+                <option name="640x480x15"   value="11" />
+                <option name="640x360x30"   value="12" />
+                <option name="640x360x15"   value="13" />
+                <option name="424x240x30"   value="14" />
+                <option name="424x240x15"   value="15" />
+                <option name="320x240x60"   value="16" />
+                <option name="320x240x30"   value="17" />
+                <option name="320x240x15"   value="18" />
+                <option name="320x180x30"   value="19" />
+                <option name="320x180x15"   value="20" />
+            </options>
+        </parameter>
+    </parameters>
+</mavlinkcamera>

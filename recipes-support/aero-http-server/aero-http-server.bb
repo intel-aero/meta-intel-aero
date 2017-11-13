@@ -7,6 +7,7 @@ inherit systemd
 SRC_URI += "file://aero-http-server.py \
             file://aero-http-server.service \
             file://aero-http-server.socket \
+            file://camera-def-rs-rgb.xml \
            "
 
 FILES_${PN} += "${bindir}/aero-http-server.py \
@@ -21,6 +22,7 @@ do_install() {
         install -m 0644 ${WORKDIR}/aero-http-server.service ${D}${systemd_unitdir}/system
         install -m 0644 ${WORKDIR}/aero-http-server.socket ${D}${systemd_unitdir}/system
         install -m 0755 ${WORKDIR}/aero-http-server.py ${D}${bindir}
+        install -m 0644 ${WORKDIR}/camera-def-rs-rgb.xml ${D}${localstatedir}/http
 }
 
 SYSTEMD_SERVICE_${PN} += "aero-http-server.service"
