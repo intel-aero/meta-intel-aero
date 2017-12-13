@@ -109,7 +109,11 @@ enable_repo() {
 		sed -i "s/<version>/${version}/" ${IMAGE_ROOTFS}/etc/yum.repos.d/intel-aero.repo
 }
 
-ROOTFS_POSTPROCESS_COMMAND += "enable_repo; "
+update_firmware() {
+		rm ${IMAGE_ROOTFS}/lib/firmware/iwlwifi-8000C-19.ucode
+}
+
+ROOTFS_POSTPROCESS_COMMAND += "enable_repo; update_firmware;"
 
 addtask create_link after do_rootfs before do_image
 
