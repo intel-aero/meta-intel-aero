@@ -69,6 +69,7 @@ IMAGE_INSTALL += "networkmanager"
 IMAGE_INSTALL += "ppp"
 IMAGE_INSTALL += "resolvconf"
 IMAGE_INSTALL += "openssh-sftp-server"
+IMAGE_INSTALL += "libnss-mdns"
 
 IMAGE_INSTALL += "hostapd"
 
