@@ -110,6 +110,7 @@ enable_repo() {
 		sed -i "s/<version>/${version}/" ${IMAGE_ROOTFS}/etc/yum.repos.d/intel-aero.repo
 }
 
+
 ROOTFS_POSTPROCESS_COMMAND += "enable_repo; "
 
 addtask create_link after do_rootfs before do_image
